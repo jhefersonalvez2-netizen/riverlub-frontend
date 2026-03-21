@@ -184,23 +184,39 @@ export default function Home() {
         marginTop: "40px",
         gap: "10px",
         fontFamily: "Arial",
-        padding: "20px"
+        padding: "20px",
+        width: "100%"
       }}
     >
       <h1>RiverLub - Painel</h1>
 
       <h3>Criar OS</h3>
 
-      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "10px",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          width: "100%",
+          maxWidth: "500px"
+        }}
+      >
         <input
           placeholder="Placa"
           value={placa}
+          autoComplete="off"
+          autoCapitalize="characters"
+          spellCheck={false}
+          inputMode="text"
+          style={{ flex: 1, minWidth: "180px", padding: "10px" }}
           onChange={(e) => setPlaca(e.target.value.toUpperCase())}
         />
 
         <button
           onClick={buscarPlaca}
           disabled={loadingBusca || !placa.trim()}
+          style={{ padding: "10px 14px" }}
         >
           {loadingBusca ? "Buscando..." : "Buscar placa"}
         </button>
@@ -209,10 +225,7 @@ export default function Home() {
       {mensagemBusca && (
         <div
           style={{
-            color:
-              mensagemBusca.includes("não encontrada")
-                ? "orange"
-                : "green",
+            color: mensagemBusca.includes("não encontrada") ? "orange" : "green",
             marginTop: "4px",
             textAlign: "center",
             maxWidth: "500px"
@@ -225,43 +238,61 @@ export default function Home() {
       <input
         placeholder="Cliente"
         value={cliente}
+        autoComplete="off"
+        spellCheck={false}
+        style={{ width: "100%", maxWidth: "500px", padding: "10px" }}
         onChange={(e) => setCliente(e.target.value)}
       />
 
       <input
         placeholder="Telefone"
         value={telefone}
+        autoComplete="off"
+        inputMode="tel"
+        style={{ width: "100%", maxWidth: "500px", padding: "10px" }}
         onChange={(e) => setTelefone(e.target.value)}
       />
 
       <input
         placeholder="Marca"
         value={marca}
+        autoComplete="off"
+        spellCheck={false}
+        style={{ width: "100%", maxWidth: "500px", padding: "10px" }}
         onChange={(e) => setMarca(e.target.value)}
       />
 
       <input
         placeholder="Modelo"
         value={modelo}
+        autoComplete="off"
+        spellCheck={false}
+        style={{ width: "100%", maxWidth: "500px", padding: "10px" }}
         onChange={(e) => setModelo(e.target.value)}
       />
 
       <input
         placeholder="Ano"
         value={ano}
+        autoComplete="off"
+        inputMode="numeric"
+        style={{ width: "100%", maxWidth: "500px", padding: "10px" }}
         onChange={(e) => setAno(e.target.value)}
       />
 
       <input
         placeholder="Motor"
         value={motor}
+        autoComplete="off"
+        spellCheck={false}
+        style={{ width: "100%", maxWidth: "500px", padding: "10px" }}
         onChange={(e) => setMotor(e.target.value)}
       />
 
       <button
         onClick={criarOS}
         disabled={loading}
-        style={{ marginTop: "10px" }}
+        style={{ marginTop: "10px", padding: "10px 18px" }}
       >
         {loading ? "Criando..." : "Criar OS"}
       </button>
@@ -274,7 +305,7 @@ export default function Home() {
 
       <h2 style={{ marginTop: "40px" }}>Ordens de Serviço</h2>
 
-      <div style={{ width: "500px", maxWidth: "100%" }}>
+      <div style={{ width: "100%", maxWidth: "500px" }}>
         {listaOS.map((os) => (
           <a
             key={os.id}
@@ -284,8 +315,9 @@ export default function Home() {
             <div
               style={{
                 border: "1px solid #ccc",
-                padding: "10px",
-                marginBottom: "10px"
+                padding: "12px",
+                marginBottom: "10px",
+                borderRadius: "8px"
               }}
             >
               <b>OS #{os.id}</b>

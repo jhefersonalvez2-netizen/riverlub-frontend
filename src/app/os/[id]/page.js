@@ -349,15 +349,15 @@ export default function OS() {
   }, [id]);
 
   if (loadingPagina) {
-    return <div style={{ padding: "40px" }}>Carregando OS...</div>;
+    return <div style={{ padding: "20px" }}>Carregando OS...</div>;
   }
 
   if (erro) {
-    return <div style={{ padding: "40px", color: "red" }}>{erro}</div>;
+    return <div style={{ padding: "20px", color: "red" }}>{erro}</div>;
   }
 
   if (!os) {
-    return <div style={{ padding: "40px" }}>OS não encontrada.</div>;
+    return <div style={{ padding: "20px" }}>OS não encontrada.</div>;
   }
 
   const total = itens.reduce((acc, i) => {
@@ -371,8 +371,15 @@ export default function OS() {
     "#333";
 
   return (
-    <div style={{ padding: "40px", fontFamily: "Arial", maxWidth: "900px" }}>
-      <h1>Ordem de Serviço #{os.id}</h1>
+    <div
+      style={{
+        padding: "20px",
+        fontFamily: "Arial",
+        maxWidth: "900px",
+        margin: "0 auto"
+      }}
+    >
+      <h1 style={{ marginBottom: "12px" }}>Ordem de Serviço #{os.id}</h1>
 
       <div
         style={{
@@ -387,11 +394,11 @@ export default function OS() {
         Status: {os.status}
       </div>
 
-      <div style={{ marginBottom: "20px" }}>
+      <div style={{ marginBottom: "20px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
         <button
           disabled={loadingAcao || os.status === "FINALIZADA"}
           onClick={finalizarOS}
-          style={{ marginRight: "10px" }}
+          style={{ padding: "10px 14px" }}
         >
           Finalizar OS
         </button>
@@ -399,21 +406,26 @@ export default function OS() {
         <button
           disabled={loadingAcao || os.status === "ABERTA"}
           onClick={reabrirOS}
+          style={{ padding: "10px 14px" }}
         >
           Reabrir OS
         </button>
       </div>
 
       <h2>Cliente</h2>
-      Nome: {os.cliente}<br />
-      Telefone: {os.telefone}
+      <div style={{ lineHeight: 1.6 }}>
+        Nome: {os.cliente}<br />
+        Telefone: {os.telefone}
+      </div>
 
       <h2 style={{ marginTop: "30px" }}>Veículo</h2>
-      Placa: {os.placa}<br />
-      Marca: {os.marca}<br />
-      Modelo: {os.modelo}<br />
-      Ano: {os.ano}<br />
-      Motor: {os.motor}
+      <div style={{ lineHeight: 1.6 }}>
+        Placa: {os.placa}<br />
+        Marca: {os.marca}<br />
+        Modelo: {os.modelo}<br />
+        Ano: {os.ano}<br />
+        Motor: {os.motor}
+      </div>
 
       <h2 style={{ marginTop: "40px" }}>Itens da OS</h2>
 
@@ -424,15 +436,17 @@ export default function OS() {
           key={i.id}
           style={{
             border: "1px solid #ccc",
-            padding: "10px",
+            padding: "12px",
             marginBottom: "10px",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            gap: "10px"
+            gap: "10px",
+            flexWrap: "wrap",
+            borderRadius: "8px"
           }}
         >
-          <div>
+          <div style={{ flex: 1, minWidth: "200px" }}>
             <b>{i.nome}</b><br />
             Qtd: {i.quantidade}<br />
             Preço: R$ {i.preco_unitario}<br />
@@ -458,7 +472,7 @@ export default function OS() {
 
       <h2 style={{ marginTop: "40px" }}>Orçamentos</h2>
 
-      <button disabled={loadingAcao} onClick={gerarOrcamento}>
+      <button disabled={loadingAcao} onClick={gerarOrcamento} style={{ padding: "10px 14px" }}>
         {loadingAcao ? "Processando..." : "Gerar orçamento"}
       </button>
 
@@ -471,7 +485,8 @@ export default function OS() {
             style={{
               border: "1px solid #999",
               padding: "12px",
-              marginBottom: "10px"
+              marginBottom: "10px",
+              borderRadius: "8px"
             }}
           >
             <b>Versão {orc.versao}</b><br />
@@ -505,7 +520,7 @@ export default function OS() {
 
       <h2 style={{ marginTop: "50px" }}>Diagnóstico IA</h2>
 
-      <button disabled={loadingAcao} onClick={gerarArvoreIA}>
+      <button disabled={loadingAcao} onClick={gerarArvoreIA} style={{ padding: "10px 14px" }}>
         {loadingAcao ? "Carregando..." : "Gerar diagnóstico IA"}
       </button>
 
@@ -524,7 +539,7 @@ export default function OS() {
                 const chave = sistema + "_" + sub;
 
                 return (
-                  <div key={sub} style={{ marginLeft: "20px" }}>
+                  <div key={sub} style={{ marginLeft: "20px", marginTop: "6px" }}>
                     <div
                       style={{ cursor: "pointer" }}
                       onClick={() => toggleSub(sistema, sub)}
@@ -534,9 +549,10 @@ export default function OS() {
 
                     {abertoSub[chave] &&
                       arvore[sistema][sub].map((peca) => (
-                        <div key={peca} style={{ marginLeft: "20px" }}>
+                        <div key={peca} style={{ marginLeft: "20px", marginTop: "4px" }}>
                           <input
                             type="checkbox"
+                            autoComplete="off"
                             checked={selecionados.includes(peca)}
                             onChange={() => togglePeca(peca)}
                           />{" "}
@@ -553,7 +569,7 @@ export default function OS() {
         <button
           disabled={loadingAcao}
           onClick={adicionarSelecionados}
-          style={{ marginTop: "20px" }}
+          style={{ marginTop: "20px", padding: "10px 14px" }}
         >
           {loadingAcao ? "Adicionando..." : "Adicionar peças selecionadas"}
         </button>
