@@ -43,6 +43,12 @@ export default function OS() {
   const [logs, setLogs] = useState([]);
   const [arvore, setArvore] = useState(null);
 
+  const [catalogoExterno, setCatalogoExterno] = useState([]);
+  const [loadingCatalogoExterno, setLoadingCatalogoExterno] = useState(false);
+
+  const [vinculacaoCatalogo, setVinculacaoCatalogo] = useState(null);
+  const [loadingVinculacao, setLoadingVinculacao] = useState(false);
+
   const [abertoSistema, setAbertoSistema] = useState({});
   const [abertoSub, setAbertoSub] = useState({});
   const [selecionados, setSelecionados] = useState([]);
@@ -217,6 +223,27 @@ export default function OS() {
     setLoadingAcao(false);
   }
 
+  async function vincularVeiculoCatalogo() {
+    setLoadingVinculacao(true);
+
+    try {
+      const data = await apiFetch(`${API}/os/${id}/vincular-catalogo`, {
+        method: "POST"
+      });
+
+      if (data.sucesso) {
+        setVinculacaoCatalogo(data.vinculacao);
+        alert("Veículo vinculado ao catálogo externo");
+        await carregarLogs();
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao vincular veículo ao catálogo externo");
+    }
+
+    setLoadingVinculacao(false);
+  }
+
   function toggleSistema(nome) {
     setAbertoSistema((prev) => ({
       ...prev,
@@ -342,6 +369,51 @@ export default function OS() {
     setLoadingAcao(false);
   }
 
+  async function buscarFiltroArCompativel() {
+    setLoadingCatalogoExterno(true);
+
+    try {
+      const data = await apiFetch(`${API}/catalogo/exemplo-filtro-ar`);
+
+      if (data.sucesso) {
+        setCatalogoExterno(data.itens || []);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao buscar catálogo externo");
+    }
+
+    setLoadingCatalogoExterno(false);
+  }
+
+  async function adicionarItemCatalogoExterno(item) {
+    setLoadingAcao(true);
+
+    try {
+      const data = await apiFetch(`${API}/os/${id}/itens`, {
+        method: "POST",
+        body: JSON.stringify({
+          tipo: "peca",
+          item_id: item.article_id,
+          nome: `${item.nome} - ${item.fabricante} (${item.codigo})`,
+          quantidade: 1,
+          preco_unitario: 0
+        })
+      });
+
+      if (data.sucesso) {
+        alert("Item adicionado na OS");
+        await carregarItens();
+        await carregarLogs();
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao adicionar item do catálogo externo");
+    }
+
+    setLoadingAcao(false);
+  }
+
   useEffect(() => {
     if (id) {
       carregarTudo();
@@ -427,6 +499,25 @@ export default function OS() {
         Motor: {os.motor}
       </div>
 
+<h2 style={{ marginTop: "30px" }}>Catálogo Externo</h2>
+
+<button
+  disabled={loadingVinculacao || loadingAcao}
+  onClick={vincularVeiculoCatalogo}
+  style={{ padding: "10px 14px", marginTop: "10px" }}
+>
+  {loadingVinculacao ? "Vinculando..." : "Vincular veículo ao catálogo"}
+</button>
+
+{vinculacaoCatalogo && (
+  <div style={{ marginTop: "12px", lineHeight: 1.6 }}>
+    <b>Vinculado com sucesso</b><br />
+    Vehicle ID: {vinculacaoCatalogo.catalog_vehicle_id}<br />
+    Model ID: {vinculacaoCatalogo.catalog_model_id}<br />
+    Type ID: {vinculacaoCatalogo.catalog_type_id}
+  </div>
+)}
+
       <h2 style={{ marginTop: "40px" }}>Itens da OS</h2>
 
       {itens.length === 0 && <div>Nenhum item adicionado ainda.</div>}
@@ -469,6 +560,56 @@ export default function OS() {
       ))}
 
       <h2>Total da OS: R$ {total.toFixed(2)}</h2>
+
+      <h2 style={{ marginTop: "40px" }}>Catálogo Externo - Teste</h2>
+
+      <button
+        disabled={loadingCatalogoExterno || loadingAcao}
+        onClick={buscarFiltroArCompativel}
+        style={{ padding: "10px 14px" }}
+      >
+        {loadingCatalogoExterno ? "Buscando..." : "Buscar filtro de ar compatível"}
+      </button>
+
+      <div style={{ marginTop: "20px" }}>
+        {catalogoExterno.map((item) => (
+          <div
+            key={item.article_id}
+            style={{
+              border: "1px solid #555",
+              padding: "12px",
+              marginBottom: "10px",
+              borderRadius: "8px",
+              display: "flex",
+              gap: "12px",
+              alignItems: "center",
+              flexWrap: "wrap"
+            }}
+          >
+            {item.imagem && (
+              <img
+                src={item.imagem}
+                alt={item.nome}
+                style={{ width: "80px", height: "80px", objectFit: "contain", background: "#fff" }}
+              />
+            )}
+
+            <div style={{ flex: 1, minWidth: "220px" }}>
+              <b>{item.nome}</b><br />
+              Fabricante: {item.fabricante}<br />
+              Código: {item.codigo}
+            </div>
+
+            <button
+              disabled={loadingAcao}
+              onClick={() => adicionarItemCatalogoExterno(item)}
+              style={{ padding: "10px 14px" }}
+            >
+              Adicionar na OS
+            </button>
+          </div>
+        ))}
+      </div>
 
       <h2 style={{ marginTop: "40px" }}>Orçamentos</h2>
 
@@ -597,4 +738,4 @@ export default function OS() {
       </div>
     </div>
   );
-}
+} 
