@@ -41,6 +41,13 @@ function getStatusClass(status) {
   return "rl-badge rl-badge-default";
 }
 
+function getOrcamentoBadgeClass(status) {
+  if (status === "APROVADO") return "rl-badge rl-badge-final";
+  if (status === "REJEITADO") return "rl-badge rl-badge-danger";
+  if (status === "PENDENTE") return "rl-badge rl-badge-open";
+  return "rl-badge rl-badge-default";
+}
+
 export default function OSPage() {
   const { id } = useParams();
 
@@ -108,7 +115,7 @@ export default function OSPage() {
       ]);
     } catch (e) {
       console.error(e);
-      setErro("Erro ao carregar dados da OS");
+      setErro("Erro ao carregar dados da OS.");
     } finally {
       setLoadingPagina(false);
     }
@@ -124,7 +131,7 @@ export default function OSPage() {
       }
     } catch (e) {
       console.error(e);
-      alert("Erro IA");
+      alert("Erro ao gerar diagnóstico IA");
     }
 
     setLoadingAcao(false);
@@ -343,6 +350,9 @@ export default function OSPage() {
   }
 
   async function removerItem(idItem) {
+    const confirmar = confirm("Deseja realmente remover este item?");
+    if (!confirmar) return;
+
     setLoadingAcao(true);
 
     try {
@@ -470,13 +480,18 @@ export default function OSPage() {
     }, 0);
   }, [itens]);
 
+  const totalItens = useMemo(() => itens.length, [itens]);
+  const totalOrcamentos = useMemo(() => orcamentos.length, [orcamentos]);
+
   if (loadingPagina) {
     return (
       <div className="rl-app">
         <div style={{ flex: 1 }}>
           <div className="rl-mobile-top">
-            <div className="rl-brand-title">RiverLub</div>
-            <div className="rl-brand-subtitle">Carregando OS</div>
+            <div className="rl-brand-title">
+              <span className="accent">River</span>Lub
+            </div>
+            <div className="rl-brand-subtitle">Carregando ordem de serviço</div>
           </div>
           <main className="rl-main">Carregando OS...</main>
         </div>
@@ -489,7 +504,9 @@ export default function OSPage() {
       <div className="rl-app">
         <div style={{ flex: 1 }}>
           <div className="rl-mobile-top">
-            <div className="rl-brand-title">RiverLub</div>
+            <div className="rl-brand-title">
+              <span className="accent">River</span>Lub
+            </div>
           </div>
           <main className="rl-main">
             <div className="rl-alert rl-alert-danger">{erro}</div>
@@ -504,7 +521,9 @@ export default function OSPage() {
       <div className="rl-app">
         <div style={{ flex: 1 }}>
           <div className="rl-mobile-top">
-            <div className="rl-brand-title">RiverLub</div>
+            <div className="rl-brand-title">
+              <span className="accent">River</span>Lub
+            </div>
           </div>
           <main className="rl-main">OS não encontrada.</main>
         </div>
@@ -516,27 +535,43 @@ export default function OSPage() {
     <div className="rl-app">
       <aside className="rl-sidebar">
         <div className="rl-brand">
-          <div className="rl-brand-title">RiverLub</div>
+          <div className="rl-brand-title">
+            <span className="accent">River</span>Lub
+          </div>
           <div className="rl-brand-subtitle">Ordem de serviço</div>
         </div>
 
         <nav className="rl-nav">
           <div className="rl-nav-label">Navegação</div>
+
           <a className="rl-nav-item" href="/">
             Painel atendente
           </a>
+
           <a className="rl-nav-item active" href={`/os/${os.id}`}>
-            OS #{os.id}
+            O.S #{os.id}
           </a>
+
+          <a className="rl-nav-item" href="#resumo">
+            Resumo
+          </a>
+
           <a className="rl-nav-item" href="#itens">
             Itens
           </a>
+
+          <a className="rl-nav-item" href="#catalogo">
+            Catálogo
+          </a>
+
           <a className="rl-nav-item" href="#orcamentos">
             Orçamentos
           </a>
+
           <a className="rl-nav-item" href="#ia">
             Diagnóstico IA
           </a>
+
           <a className="rl-nav-item" href="#historico">
             Histórico
           </a>
@@ -548,13 +583,17 @@ export default function OSPage() {
           {os.modelo || "Modelo não informado"}
           <br />
           Placa: {os.placa || "-"}
+          <br />
+          Status: {os.status || "-"}
         </div>
       </aside>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="rl-mobile-top">
-          <div className="rl-brand-title">RiverLub</div>
-          <div className="rl-brand-subtitle">OS #{os.id}</div>
+          <div className="rl-brand-title">
+            <span className="accent">River</span>Lub
+          </div>
+          <div className="rl-brand-subtitle">O.S #{os.id}</div>
         </div>
 
         <main className="rl-main">
@@ -562,12 +601,14 @@ export default function OSPage() {
             <div>
               <h1 className="rl-page-title">Ordem de Serviço #{os.id}</h1>
               <p className="rl-page-subtitle">
-                Gestão completa do atendimento, itens, orçamento e diagnóstico.
+                Gestão completa do atendimento, itens, orçamento, diagnóstico e
+                histórico operacional.
               </p>
             </div>
 
             <div className="rl-topbar-actions">
               <span className={getStatusClass(os.status)}>{os.status}</span>
+
               <button
                 className="rl-btn rl-btn-success"
                 disabled={loadingAcao || os.status === "FINALIZADA"}
@@ -575,6 +616,7 @@ export default function OSPage() {
               >
                 Finalizar OS
               </button>
+
               <button
                 className="rl-btn rl-btn-secondary"
                 disabled={loadingAcao || os.status === "ABERTA"}
@@ -585,66 +627,86 @@ export default function OSPage() {
             </div>
           </div>
 
-          <section className="rl-grid cols-2">
-            <div className="rl-card">
-              <div className="rl-card-header">
-                <div className="rl-card-title">Cliente</div>
-              </div>
-              <div className="rl-card-body">
-                <div className="rl-data-grid">
-                  <div className="rl-data-item">
-                    <div className="rl-data-label">Nome</div>
-                    <div className="rl-data-value">{os.cliente || "-"}</div>
-                  </div>
-                  <div className="rl-data-item">
-                    <div className="rl-data-label">Telefone</div>
-                    <div className="rl-data-value">{os.telefone || "-"}</div>
-                  </div>
-                </div>
-              </div>
+          <section className="rl-grid cols-3" id="resumo">
+            <div className="rl-card rl-kpi">
+              <div className="rl-kpi-label">Total atual</div>
+              <div className="rl-kpi-value">R$ {total.toFixed(2)}</div>
+              <div className="rl-kpi-foot">Soma dos itens registrados</div>
             </div>
 
-            <div className="rl-card">
-              <div className="rl-card-header">
-                <div className="rl-card-title">Veículo</div>
-              </div>
-              <div className="rl-card-body">
-                <div className="rl-data-grid">
-                  <div className="rl-data-item">
-                    <div className="rl-data-label">Placa</div>
-                    <div className="rl-data-value">{os.placa || "-"}</div>
-                  </div>
-                  <div className="rl-data-item">
-                    <div className="rl-data-label">Marca</div>
-                    <div className="rl-data-value">{os.marca || "-"}</div>
-                  </div>
-                  <div className="rl-data-item">
-                    <div className="rl-data-label">Modelo</div>
-                    <div className="rl-data-value">{os.modelo || "-"}</div>
-                  </div>
-                  <div className="rl-data-item">
-                    <div className="rl-data-label">Ano</div>
-                    <div className="rl-data-value">{os.ano || "-"}</div>
-                  </div>
-                  <div className="rl-data-item">
-                    <div className="rl-data-label">Motor</div>
-                    <div className="rl-data-value">{os.motor || "-"}</div>
-                  </div>
-                </div>
-              </div>
+            <div className="rl-card rl-kpi">
+              <div className="rl-kpi-label">Itens na OS</div>
+              <div className="rl-kpi-value">{totalItens}</div>
+              <div className="rl-kpi-foot">Peças e serviços cadastrados</div>
+            </div>
+
+            <div className="rl-card rl-kpi">
+              <div className="rl-kpi-label">Orçamentos</div>
+              <div className="rl-kpi-value">{totalOrcamentos}</div>
+              <div className="rl-kpi-foot">Versões geradas até agora</div>
             </div>
           </section>
 
           <section className="rl-section">
-            <div className="rl-card">
-              <div className="rl-card-header">
-                <div className="rl-card-title">Resumo financeiro</div>
+            <div className="rl-grid cols-2">
+              <div className="rl-card">
+                <div className="rl-card-header">
+                  <div className="rl-card-title">Cliente</div>
+                  <div className="rl-card-subtitle">
+                    Dados principais do atendimento.
+                  </div>
+                </div>
+
+                <div className="rl-card-body">
+                  <div className="rl-data-grid">
+                    <div className="rl-data-item">
+                      <div className="rl-data-label">Nome</div>
+                      <div className="rl-data-value">{os.cliente || "-"}</div>
+                    </div>
+
+                    <div className="rl-data-item">
+                      <div className="rl-data-label">Telefone</div>
+                      <div className="rl-data-value">{os.telefone || "-"}</div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="rl-card-body">
-                <div className="rl-kpi-label">Total atual da OS</div>
-                <div className="rl-kpi-value">R$ {total.toFixed(2)}</div>
-                <div className="rl-kpi-foot">
-                  Baseado nos itens atualmente registrados.
+
+              <div className="rl-card">
+                <div className="rl-card-header">
+                  <div className="rl-card-title">Veículo</div>
+                  <div className="rl-card-subtitle">
+                    Identificação usada na ordem de serviço.
+                  </div>
+                </div>
+
+                <div className="rl-card-body">
+                  <div className="rl-data-grid">
+                    <div className="rl-data-item">
+                      <div className="rl-data-label">Placa</div>
+                      <div className="rl-data-value">{os.placa || "-"}</div>
+                    </div>
+
+                    <div className="rl-data-item">
+                      <div className="rl-data-label">Marca</div>
+                      <div className="rl-data-value">{os.marca || "-"}</div>
+                    </div>
+
+                    <div className="rl-data-item">
+                      <div className="rl-data-label">Modelo</div>
+                      <div className="rl-data-value">{os.modelo || "-"}</div>
+                    </div>
+
+                    <div className="rl-data-item">
+                      <div className="rl-data-label">Ano</div>
+                      <div className="rl-data-value">{os.ano || "-"}</div>
+                    </div>
+
+                    <div className="rl-data-item">
+                      <div className="rl-data-label">Motor</div>
+                      <div className="rl-data-value">{os.motor || "-"}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -655,7 +717,7 @@ export default function OSPage() {
               <div className="rl-card-header">
                 <div className="rl-card-title">Itens da OS</div>
                 <div className="rl-card-subtitle">
-                  Ajuste quantidades, preços e remova itens quando necessário.
+                  Ajuste quantidades, edite preços e remova itens quando necessário.
                 </div>
               </div>
 
@@ -686,6 +748,7 @@ export default function OSPage() {
                         >
                           +
                         </button>
+
                         <button
                           className="rl-small-btn"
                           disabled={loadingAcao}
@@ -693,6 +756,7 @@ export default function OSPage() {
                         >
                           -
                         </button>
+
                         <button
                           className="rl-small-btn"
                           disabled={loadingAcao}
@@ -700,6 +764,7 @@ export default function OSPage() {
                         >
                           Editar
                         </button>
+
                         <button
                           className="rl-small-btn"
                           disabled={loadingAcao}
@@ -720,7 +785,7 @@ export default function OSPage() {
             </div>
           </section>
 
-          <section className="rl-section">
+          <section className="rl-section" id="catalogo">
             <div className="rl-card">
               <div className="rl-card-header">
                 <div className="rl-card-title">Catálogo externo</div>
@@ -760,7 +825,7 @@ export default function OSPage() {
 
                 {vinculacaoCatalogo && (
                   <div style={{ marginTop: 14 }} className="rl-alert rl-alert-success">
-                    <strong>Vinculado com sucesso.</strong>
+                    <strong>Veículo vinculado com sucesso.</strong>
                     <br />
                     Vehicle ID: {vinculacaoCatalogo.catalog_vehicle_id}
                     <br />
@@ -781,8 +846,7 @@ export default function OSPage() {
                         <div className="rl-os-meta">
                           Descrição: {candidato.descricao || "Sem descrição"}
                           <br />
-                          Ano: {candidato.ano_inicio || "?"} até{" "}
-                          {candidato.ano_fim || "?"}
+                          Ano: {candidato.ano_inicio || "?"} até {candidato.ano_fim || "?"}
                           <br />
                           Motor: {candidato.motor || "Não informado"}
                         </div>
@@ -793,9 +857,7 @@ export default function OSPage() {
                             disabled={loadingVinculacao}
                             onClick={() => selecionarCandidatoCatalogo(candidato)}
                           >
-                            {loadingVinculacao
-                              ? "Salvando..."
-                              : "Selecionar este veículo"}
+                            {loadingVinculacao ? "Salvando..." : "Selecionar este veículo"}
                           </button>
                         </div>
                       </div>
@@ -852,6 +914,12 @@ export default function OSPage() {
                     ))}
                   </div>
                 )}
+
+                {catalogo.length > 0 && (
+                  <div style={{ marginTop: 18 }} className="rl-muted">
+                    Serviços internos carregados: {catalogo.length}
+                  </div>
+                )}
               </div>
             </div>
           </section>
@@ -883,24 +951,38 @@ export default function OSPage() {
 
                   {orcamentos.map((orc) => (
                     <div key={orc.id} className="rl-list-item">
-                      <div className="rl-os-title">Versão {orc.versao}</div>
-                      <div className="rl-os-meta">
-                        Status: {orc.status}
-                        <br />
-                        Total: R$ {Number(orc.valor_total || 0).toFixed(2)}
-                        <br />
-                        Criado em:{" "}
-                        {orc.criado_em
-                          ? new Date(orc.criado_em).toLocaleString("pt-BR")
-                          : "-"}
-                        <br />
-                        {orc.aprovado_em && (
-                          <>
-                            Aprovado em:{" "}
-                            {new Date(orc.aprovado_em).toLocaleString("pt-BR")}
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 12,
+                          flexWrap: "wrap",
+                          alignItems: "center",
+                        }}
+                      >
+                        <div>
+                          <div className="rl-os-title">Versão {orc.versao}</div>
+                          <div className="rl-os-meta">
+                            Total: R$ {Number(orc.valor_total || 0).toFixed(2)}
                             <br />
-                          </>
-                        )}
+                            Criado em:{" "}
+                            {orc.criado_em
+                              ? new Date(orc.criado_em).toLocaleString("pt-BR")
+                              : "-"}
+                            <br />
+                            {orc.aprovado_em && (
+                              <>
+                                Aprovado em:{" "}
+                                {new Date(orc.aprovado_em).toLocaleString("pt-BR")}
+                                <br />
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        <span className={getOrcamentoBadgeClass(orc.status)}>
+                          {orc.status}
+                        </span>
                       </div>
 
                       <div style={{ marginTop: 12 }} className="rl-inline">
@@ -1006,7 +1088,7 @@ export default function OSPage() {
               <div className="rl-card-header">
                 <div className="rl-card-title">Histórico da OS</div>
                 <div className="rl-card-subtitle">
-                  Registro das principais ações executadas.
+                  Registro das principais ações executadas no atendimento.
                 </div>
               </div>
 

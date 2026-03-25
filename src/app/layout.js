@@ -12,9 +12,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "RiverLub",
+  title: {
+    default: "RiverLub",
+    template: "%s | RiverLub",
+  },
   description: "Sistema inteligente para oficinas mecânicas",
   applicationName: "RiverLub",
+  keywords: [
+    "oficina mecânica",
+    "ordem de serviço",
+    "gestão de oficina",
+    "catálogo de peças",
+    "diagnóstico automotivo",
+    "RiverLub",
+  ],
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -33,7 +44,7 @@ export const metadata = {
 };
 
 export const viewport = {
-  themeColor: "#0f172a",
+  themeColor: "#10233f",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -42,7 +53,7 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} rl-body`}>
         {children}
       </body>
     </html>
