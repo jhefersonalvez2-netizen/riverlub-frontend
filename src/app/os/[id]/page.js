@@ -406,6 +406,16 @@ export default function OSPage() {
     setLoadingAcao(false);
   }
 
+  async function copiarLinkPublico(link) {
+    try {
+      await navigator.clipboard.writeText(link);
+      alert("Link copiado com sucesso.");
+    } catch (e) {
+      console.error(e);
+      alert("Não foi possível copiar o link.");
+    }
+  }
+
   useEffect(() => {
     if (id) {
       carregarTudo();
@@ -943,41 +953,100 @@ export default function OSPage() {
                     <div className="rl-empty">Nenhum orçamento gerado ainda.</div>
                   )}
 
-                  {orcamentos.map((orc) => (
-                    <div key={orc.id} className="rl-list-item">
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          gap: 12,
-                          flexWrap: "wrap",
-                          alignItems: "center",
-                        }}
-                      >
-                        <div>
-                          <div className="rl-os-title">Versão {orc.versao}</div>
-                          <div className="rl-os-meta">
-                            Total: R$ {Number(orc.valor_total || 0).toFixed(2)}
-                            <br />
-                            Criado em:{" "}
-                            {orc.criado_em
-                              ? new Date(orc.criado_em).toLocaleString("pt-BR")
-                              : "-"}
-                            <br />
-                            {orc.aprovado_em && (
-                              <>
-                                Aprovado em:{" "}
-                                {new Date(orc.aprovado_em).toLocaleString("pt-BR")}
-                                <br />
-                              </>
-                            )}
+                  {orcamentos.map((orc) => {
+                    const linkPublico = orc.cliente_token
+                      ? `${window.location.origin}/cliente/orcamento/${orc.cliente_token}`
+                      : null;
+
+                    return (
+                      <div key={orc.id} className="rl-list-item">
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: 12,
+                            flexWrap: "wrap",
+                            alignItems: "center",
+                          }}
+                        >
+                          <div>
+                            <div className="rl-os-title">Versão {orc.versao}</div>
+                            <div className="rl-os-meta">
+                              Total: R$ {Number(orc.valor_total || 0).toFixed(2)}
+                              <br />
+                              Criado em:{" "}
+                              {orc.criado_em
+                                ? new Date(orc.criado_em).toLocaleString("pt-BR")
+                                : "-"}
+                              <br />
+                              {orc.aprovado_em && (
+                                <>
+                                  Aprovado em:{" "}
+                                  {new Date(orc.aprovado_em).toLocaleString("pt-BR")}
+                                  <br />
+                                </>
+                              )}
+                            </div>
                           </div>
+
+                          <StatusBadge status={orc.status} />
                         </div>
 
-                        <StatusBadge status={orc.status} />
+                        {linkPublico && (
+                          <div
+                            style={{
+                              marginTop: 14,
+                              padding: 14,
+                              borderRadius: 14,
+                              background: "var(--surface-2)",
+                              border: "1px solid var(--border)",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontSize: 12,
+                                fontWeight: 800,
+                                color: "var(--text-soft)",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.06em",
+                              }}
+                            >
+                              Link público do cliente
+                            </div>
+
+                            <div
+                              style={{
+                                marginTop: 8,
+                                wordBreak: "break-all",
+                                fontSize: 14,
+                                color: "var(--text)",
+                              }}
+                            >
+                              {linkPublico}
+                            </div>
+
+                            <div className="rl-inline" style={{ marginTop: 12 }}>
+                              <button
+                                className="rl-btn rl-btn-secondary"
+                                onClick={() => copiarLinkPublico(linkPublico)}
+                              >
+                                Copiar link
+                              </button>
+
+                              <a
+                                href={linkPublico}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="rl-btn rl-btn-dark"
+                              >
+                                Abrir tela do cliente
+                              </a>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
