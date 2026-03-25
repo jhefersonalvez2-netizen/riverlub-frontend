@@ -488,10 +488,18 @@ export default function OSPage() {
       <div className="rl-app">
         <div style={{ flex: 1 }}>
           <div className="rl-mobile-top">
-            <div className="rl-brand-title">
-              <span className="accent">River</span>Lub
+            <img
+              src="/icon-512.png"
+              alt="RiverLub"
+              style={{
+                width: 120,
+                height: "auto",
+                objectFit: "contain",
+              }}
+            />
+            <div className="rl-brand-subtitle" style={{ marginTop: 6 }}>
+              Carregando ordem de serviço
             </div>
-            <div className="rl-brand-subtitle">Carregando ordem de serviço</div>
           </div>
           <main className="rl-main">Carregando OS...</main>
         </div>
@@ -504,9 +512,15 @@ export default function OSPage() {
       <div className="rl-app">
         <div style={{ flex: 1 }}>
           <div className="rl-mobile-top">
-            <div className="rl-brand-title">
-              <span className="accent">River</span>Lub
-            </div>
+            <img
+              src="/icon-512.png"
+              alt="RiverLub"
+              style={{
+                width: 120,
+                height: "auto",
+                objectFit: "contain",
+              }}
+            />
           </div>
           <main className="rl-main">
             <div className="rl-alert rl-alert-danger">{erro}</div>
@@ -521,9 +535,15 @@ export default function OSPage() {
       <div className="rl-app">
         <div style={{ flex: 1 }}>
           <div className="rl-mobile-top">
-            <div className="rl-brand-title">
-              <span className="accent">River</span>Lub
-            </div>
+            <img
+              src="/icon-512.png"
+              alt="RiverLub"
+              style={{
+                width: 120,
+                height: "auto",
+                objectFit: "contain",
+              }}
+            />
           </div>
           <main className="rl-main">OS não encontrada.</main>
         </div>
@@ -534,10 +554,16 @@ export default function OSPage() {
   return (
     <div className="rl-app">
       <aside className="rl-sidebar">
-        <div className="rl-brand">
-          <div className="rl-brand-title">
-            <span className="accent">River</span>Lub
-          </div>
+        <div className="rl-brand" style={{ alignItems: "flex-start" }}>
+          <img
+            src="/icon-512.png"
+            alt="RiverLub"
+            style={{
+              width: 138,
+              height: "auto",
+              objectFit: "contain",
+            }}
+          />
           <div className="rl-brand-subtitle">Ordem de serviço</div>
         </div>
 
@@ -590,10 +616,18 @@ export default function OSPage() {
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="rl-mobile-top">
-          <div className="rl-brand-title">
-            <span className="accent">River</span>Lub
+          <img
+            src="/icon-512.png"
+            alt="RiverLub"
+            style={{
+              width: 120,
+              height: "auto",
+              objectFit: "contain",
+            }}
+          />
+          <div className="rl-brand-subtitle" style={{ marginTop: 6 }}>
+            O.S #{os.id}
           </div>
-          <div className="rl-brand-subtitle">O.S #{os.id}</div>
         </div>
 
         <main className="rl-main">

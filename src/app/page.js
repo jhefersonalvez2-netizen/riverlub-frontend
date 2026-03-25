@@ -39,19 +39,8 @@ function getStatusClass(status) {
 }
 
 export default function Home() {
-  const [cliente, setCliente] = useState("");
-  const [telefone, setTelefone] = useState("");
-  const [placa, setPlaca] = useState("");
-  const [marca, setMarca] = useState("");
-  const [modelo, setModelo] = useState("");
-  const [ano, setAno] = useState("");
-  const [motor, setMotor] = useState("");
-
-  const [loading, setLoading] = useState(false);
-  const [loadingBusca, setLoadingBusca] = useState(false);
   const [listaOS, setListaOS] = useState([]);
   const [erro, setErro] = useState("");
-  const [mensagemBusca, setMensagemBusca] = useState("");
 
   async function carregarOS() {
     try {
@@ -71,115 +60,6 @@ export default function Home() {
     carregarOS();
   }, []);
 
-  function limparFormularioMantendoPlaca() {
-    setCliente("");
-    setTelefone("");
-    setMarca("");
-    setModelo("");
-    setAno("");
-    setMotor("");
-  }
-
-  async function buscarPlaca() {
-    if (!placa.trim()) {
-      alert("Digite uma placa");
-      return;
-    }
-
-    setLoadingBusca(true);
-    setMensagemBusca("");
-    setErro("");
-
-    try {
-      const data = await apiFetch(`${API}/os/buscar-placa/${placa}`);
-
-      if (!data.sucesso) {
-        setMensagemBusca("Erro ao buscar placa.");
-        setLoadingBusca(false);
-        return;
-      }
-
-      if (!data.encontrado) {
-        limparFormularioMantendoPlaca();
-        setMensagemBusca("Placa não encontrada nem no sistema nem na API externa.");
-        setLoadingBusca(false);
-        return;
-      }
-
-      const dados = data.dados || {};
-
-      setCliente(dados.cliente || "");
-      setTelefone(dados.telefone || "");
-      setPlaca(dados.placa || placa.toUpperCase());
-      setMarca(dados.marca || "");
-      setModelo(dados.modelo || "");
-      setAno(dados.ano || "");
-      setMotor(dados.motor || "");
-
-      if (data.origem === "banco") {
-        setMensagemBusca("Placa encontrada no sistema. Dados preenchidos automaticamente.");
-      } else if (data.origem === "api_externa") {
-        setMensagemBusca("Placa encontrada na API externa. Complete cliente e telefone para criar.");
-      } else {
-        setMensagemBusca("Dados carregados.");
-      }
-    } catch (err) {
-      console.error(err);
-      setMensagemBusca("Erro ao buscar placa.");
-    }
-
-    setLoadingBusca(false);
-  }
-
-  async function criarOS() {
-    if (!cliente || !placa) {
-      alert("Cliente e placa são obrigatórios");
-      return;
-    }
-
-    setLoading(true);
-    setErro("");
-
-    try {
-      const data = await apiFetch(`${API}/os`, {
-        method: "POST",
-        body: JSON.stringify({
-          cliente,
-          telefone,
-          placa,
-          marca,
-          modelo,
-          ano,
-          motor,
-        }),
-      });
-
-      if (!data.sucesso) {
-        alert(data.erro || "Erro ao criar OS");
-        setLoading(false);
-        return;
-      }
-
-      alert(`OS criada com sucesso. ID: ${data.os.id}`);
-
-      setCliente("");
-      setTelefone("");
-      setPlaca("");
-      setMarca("");
-      setModelo("");
-      setAno("");
-      setMotor("");
-      setMensagemBusca("");
-
-      await carregarOS();
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao conectar com a API");
-    }
-
-    setLoading(false);
-  }
-
   const totalOS = listaOS.length;
 
   const abertas = useMemo(
@@ -197,10 +77,16 @@ export default function Home() {
   return (
     <div className="rl-app">
       <aside className="rl-sidebar">
-        <div className="rl-brand">
-          <div className="rl-brand-title">
-            <span className="accent">River</span>Lub
-          </div>
+        <div className="rl-brand" style={{ alignItems: "flex-start" }}>
+          <img
+            src="/icon-512.png"
+            alt="RiverLub"
+            style={{
+              width: 138,
+              height: "auto",
+              objectFit: "contain",
+            }}
+          />
           <div className="rl-brand-subtitle">Sistema operacional para oficinas</div>
         </div>
 
@@ -211,11 +97,11 @@ export default function Home() {
             Painel atendente
           </a>
 
-          <a className="rl-nav-item" href="#">
+          <a className="rl-nav-item" href="/fila">
             Fila de carros
           </a>
 
-          <a className="rl-nav-item" href="#">
+          <a className="rl-nav-item" href="/cadastro">
             Cadastro
           </a>
 
@@ -249,10 +135,18 @@ export default function Home() {
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="rl-mobile-top">
-          <div className="rl-brand-title">
-            <span className="accent">River</span>Lub
+          <img
+            src="/icon-512.png"
+            alt="RiverLub"
+            style={{
+              width: 120,
+              height: "auto",
+              objectFit: "contain",
+            }}
+          />
+          <div className="rl-brand-subtitle" style={{ marginTop: 6 }}>
+            Painel atendente
           </div>
-          <div className="rl-brand-subtitle">Painel atendente</div>
         </div>
 
         <main className="rl-main">
@@ -260,17 +154,27 @@ export default function Home() {
             <div>
               <h1 className="rl-page-title">Painel atendente</h1>
               <p className="rl-page-subtitle">
-                Cadastre veículos, abra ordens de serviço e acompanhe a operação
-                da oficina em tempo real.
+                Acompanhe os principais números da oficina, acesse as ordens de
+                serviço recentes e inicie novos atendimentos rapidamente.
               </p>
             </div>
 
             <div className="rl-topbar-actions">
+              <a href="/cadastro" className="rl-btn rl-btn-success">
+                Nova O.S
+              </a>
+
               <button className="rl-btn rl-btn-secondary" onClick={carregarOS}>
                 Atualizar painel
               </button>
             </div>
           </div>
+
+          {erro && (
+            <div className="rl-alert rl-alert-danger" style={{ marginBottom: 18 }}>
+              {erro}
+            </div>
+          )}
 
           <section className="rl-grid cols-3">
             <div className="rl-card rl-kpi">
@@ -293,143 +197,44 @@ export default function Home() {
           </section>
 
           <section className="rl-section">
-            <div className="rl-card">
-              <div className="rl-card-header">
-                <div className="rl-card-title">Criar nova ordem de serviço</div>
-                <div className="rl-card-subtitle">
-                  Busque pela placa, confirme os dados do cliente e do veículo e
-                  abra uma nova OS com poucos cliques.
+            <div className="rl-grid cols-2">
+              <div className="rl-card">
+                <div className="rl-card-header">
+                  <div className="rl-card-title">Ações rápidas</div>
+                  <div className="rl-card-subtitle">
+                    Atalhos operacionais para acelerar o atendimento.
+                  </div>
+                </div>
+
+                <div className="rl-card-body">
+                  <div className="rl-inline">
+                    <a href="/cadastro" className="rl-btn rl-btn-success">
+                      Abrir nova O.S
+                    </a>
+
+                    <a href="/fila" className="rl-btn rl-btn-secondary">
+                      Ver fila de carros
+                    </a>
+                  </div>
                 </div>
               </div>
 
-              <div className="rl-card-body">
-                <div className="rl-form-grid">
-                  <div className="rl-field">
-                    <label className="rl-label">Placa</label>
-                    <input
-                      className="rl-input"
-                      placeholder="ABC1D23"
-                      value={placa}
-                      autoComplete="off"
-                      autoCapitalize="characters"
-                      spellCheck={false}
-                      inputMode="text"
-                      onChange={(e) => setPlaca(e.target.value.toUpperCase())}
-                    />
+              <div className="rl-card">
+                <div className="rl-card-header">
+                  <div className="rl-card-title">Visão operacional</div>
+                  <div className="rl-card-subtitle">
+                    Resumo rápido do momento atual da oficina.
                   </div>
+                </div>
 
-                  <div className="rl-field" style={{ justifyContent: "flex-end" }}>
-                    <label className="rl-label">Consulta automática</label>
-                    <button
-                      className="rl-btn rl-btn-secondary"
-                      onClick={buscarPlaca}
-                      disabled={loadingBusca || !placa.trim()}
-                    >
-                      {loadingBusca ? "Buscando..." : "Buscar placa"}
-                    </button>
+                <div className="rl-card-body">
+                  <div className="rl-os-meta" style={{ fontSize: 15 }}>
+                    • {abertas} ordem(ns) aberta(s) aguardando acompanhamento
+                    <br />
+                    • {finalizadas} ordem(ns) finalizada(s) registradas
+                    <br />
+                    • {recentes.length} ordem(ns) recente(s) exibida(s) no painel
                   </div>
-
-                  {mensagemBusca && (
-                    <div className="rl-field full">
-                      <div
-                        className={
-                          mensagemBusca.includes("não encontrada")
-                            ? "rl-alert rl-alert-warning"
-                            : "rl-alert rl-alert-success"
-                        }
-                      >
-                        {mensagemBusca}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="rl-field">
-                    <label className="rl-label">Cliente</label>
-                    <input
-                      className="rl-input"
-                      placeholder="Nome do cliente"
-                      value={cliente}
-                      autoComplete="off"
-                      spellCheck={false}
-                      onChange={(e) => setCliente(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="rl-field">
-                    <label className="rl-label">Telefone</label>
-                    <input
-                      className="rl-input"
-                      placeholder="(00)00000-0000"
-                      value={telefone}
-                      autoComplete="off"
-                      inputMode="tel"
-                      onChange={(e) => setTelefone(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="rl-field">
-                    <label className="rl-label">Marca</label>
-                    <input
-                      className="rl-input"
-                      placeholder="Marca"
-                      value={marca}
-                      autoComplete="off"
-                      spellCheck={false}
-                      onChange={(e) => setMarca(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="rl-field">
-                    <label className="rl-label">Modelo</label>
-                    <input
-                      className="rl-input"
-                      placeholder="Modelo"
-                      value={modelo}
-                      autoComplete="off"
-                      spellCheck={false}
-                      onChange={(e) => setModelo(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="rl-field">
-                    <label className="rl-label">Ano</label>
-                    <input
-                      className="rl-input"
-                      placeholder="Ano"
-                      value={ano}
-                      autoComplete="off"
-                      inputMode="numeric"
-                      onChange={(e) => setAno(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="rl-field">
-                    <label className="rl-label">Motor</label>
-                    <input
-                      className="rl-input"
-                      placeholder="Motor"
-                      value={motor}
-                      autoComplete="off"
-                      spellCheck={false}
-                      onChange={(e) => setMotor(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="rl-field full">
-                    <button
-                      className="rl-btn rl-btn-success"
-                      onClick={criarOS}
-                      disabled={loading}
-                    >
-                      {loading ? "Criando..." : "Criar OS"}
-                    </button>
-                  </div>
-
-                  {erro && (
-                    <div className="rl-field full">
-                      <div className="rl-alert rl-alert-danger">{erro}</div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
