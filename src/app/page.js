@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -93,17 +94,17 @@ export default function Home() {
         <nav className="rl-nav">
           <div className="rl-nav-label">Operação</div>
 
-          <a className="rl-nav-item active" href="/">
+          <Link className="rl-nav-item active" href="/">
             Painel atendente
-          </a>
+          </Link>
 
-          <a className="rl-nav-item" href="/fila">
+          <Link className="rl-nav-item" href="/fila">
             Fila de carros
-          </a>
+          </Link>
 
-          <a className="rl-nav-item" href="/cadastro">
+          <Link className="rl-nav-item" href="/cadastro">
             Cadastro
-          </a>
+          </Link>
 
           <a className="rl-nav-item" href="#">
             Consultar peça
@@ -160,9 +161,9 @@ export default function Home() {
             </div>
 
             <div className="rl-topbar-actions">
-              <a href="/cadastro" className="rl-btn rl-btn-success">
+              <Link href="/cadastro" className="rl-btn rl-btn-success">
                 Nova O.S
-              </a>
+              </Link>
 
               <button className="rl-btn rl-btn-secondary" onClick={carregarOS}>
                 Atualizar painel
@@ -208,13 +209,13 @@ export default function Home() {
 
                 <div className="rl-card-body">
                   <div className="rl-inline">
-                    <a href="/cadastro" className="rl-btn rl-btn-success">
+                    <Link href="/cadastro" className="rl-btn rl-btn-success">
                       Abrir nova O.S
-                    </a>
+                    </Link>
 
-                    <a href="/fila" className="rl-btn rl-btn-secondary">
+                    <Link href="/fila" className="rl-btn rl-btn-secondary">
                       Ver fila de carros
-                    </a>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -256,7 +257,7 @@ export default function Home() {
                   )}
 
                   {recentes.map((os) => (
-                    <a key={os.id} href={`/os/${os.id}`} className="rl-list-item">
+                    <Link key={os.id} href={`/os/${os.id}`} className="rl-list-item">
                       <div className="rl-os-row">
                         <div className="rl-os-main">
                           <div className="rl-os-title">
@@ -281,7 +282,7 @@ export default function Home() {
                           </span>
                         </div>
                       </div>
-                    </a>
+                    </Link>
                   ))}
                 </div>
               </div>

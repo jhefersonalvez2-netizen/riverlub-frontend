@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 
@@ -570,13 +571,13 @@ export default function OSPage() {
         <nav className="rl-nav">
           <div className="rl-nav-label">Navegação</div>
 
-          <a className="rl-nav-item" href="/">
+          <Link className="rl-nav-item" href="/">
             Painel atendente
-          </a>
+          </Link>
 
-          <a className="rl-nav-item active" href={`/os/${os.id}`}>
+          <Link className="rl-nav-item active" href={`/os/${os.id}`}>
             O.S #{os.id}
-          </a>
+          </Link>
 
           <a className="rl-nav-item" href="#resumo">
             Resumo
