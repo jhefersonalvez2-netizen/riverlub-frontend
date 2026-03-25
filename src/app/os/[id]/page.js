@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import AppSidebar from "../../../components/AppSidebar";
+import StatusBadge from "../../../components/StatusBadge";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
@@ -35,19 +36,6 @@ async function apiFetch(url, options = {}) {
   }
 
   return data;
-}
-
-function getStatusClass(status) {
-  if (status === "FINALIZADA") return "rl-badge rl-badge-final";
-  if (status === "ABERTA") return "rl-badge rl-badge-open";
-  return "rl-badge rl-badge-default";
-}
-
-function getOrcamentoBadgeClass(status) {
-  if (status === "APROVADO") return "rl-badge rl-badge-final";
-  if (status === "REJEITADO") return "rl-badge rl-badge-danger";
-  if (status === "PENDENTE") return "rl-badge rl-badge-open";
-  return "rl-badge rl-badge-default";
 }
 
 export default function OSPage() {
@@ -123,6 +111,30 @@ export default function OSPage() {
     }
   }
 
+  async function alterarStatusOS(novoStatus, mensagemSucesso = "Status alterado") {
+    setLoadingAcao(true);
+
+    try {
+      const data = await apiFetch(`${API}/os/${id}/status`, {
+        method: "PUT",
+        body: JSON.stringify({
+          status: novoStatus,
+        }),
+      });
+
+      if (data.sucesso) {
+        alert(mensagemSucesso);
+        await carregarOS();
+        await carregarLogs();
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao alterar status da OS");
+    }
+
+    setLoadingAcao(false);
+  }
+
   async function gerarArvoreIA() {
     setLoadingAcao(true);
 
@@ -149,6 +161,7 @@ export default function OSPage() {
 
       if (data.sucesso) {
         alert(`Orçamento versão ${data.orcamento.versao} gerado com sucesso`);
+        await carregarOS();
         await carregarOrcamentos();
         await carregarLogs();
       }
@@ -160,88 +173,12 @@ export default function OSPage() {
     setLoadingAcao(false);
   }
 
-  async function aprovarOrcamento(orcamentoId) {
-    setLoadingAcao(true);
-
-    try {
-      const data = await apiFetch(`${API}/os/orcamentos/${orcamentoId}/aprovar`, {
-        method: "PUT",
-      });
-
-      if (data.sucesso) {
-        alert("Orçamento aprovado");
-        await carregarOrcamentos();
-        await carregarLogs();
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Erro ao aprovar orçamento");
-    }
-
-    setLoadingAcao(false);
-  }
-
-  async function rejeitarOrcamento(orcamentoId) {
-    setLoadingAcao(true);
-
-    try {
-      const data = await apiFetch(`${API}/os/orcamentos/${orcamentoId}/rejeitar`, {
-        method: "PUT",
-      });
-
-      if (data.sucesso) {
-        alert("Orçamento rejeitado");
-        await carregarOrcamentos();
-        await carregarLogs();
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Erro ao rejeitar orçamento");
-    }
-
-    setLoadingAcao(false);
-  }
-
   async function finalizarOS() {
-    setLoadingAcao(true);
-
-    try {
-      const data = await apiFetch(`${API}/os/${id}/finalizar`, {
-        method: "PUT",
-      });
-
-      if (data.sucesso) {
-        alert("OS finalizada");
-        await carregarOS();
-        await carregarLogs();
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Erro ao finalizar OS");
-    }
-
-    setLoadingAcao(false);
+    await alterarStatusOS("FINALIZADA", "OS finalizada");
   }
 
   async function reabrirOS() {
-    setLoadingAcao(true);
-
-    try {
-      const data = await apiFetch(`${API}/os/${id}/reabrir`, {
-        method: "PUT",
-      });
-
-      if (data.sucesso) {
-        alert("OS reaberta");
-        await carregarOS();
-        await carregarLogs();
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Erro ao reabrir OS");
-    }
-
-    setLoadingAcao(false);
+    await alterarStatusOS("ABERTA", "OS reaberta");
   }
 
   async function buscarCandidatosCatalogo() {
@@ -593,7 +530,7 @@ export default function OSPage() {
             </div>
 
             <div className="rl-topbar-actions">
-              <span className={getStatusClass(os.status)}>{os.status}</span>
+              <StatusBadge status={os.status} />
 
               <button
                 className="rl-btn rl-btn-success"
@@ -612,6 +549,73 @@ export default function OSPage() {
               </button>
             </div>
           </div>
+
+          <section className="rl-section">
+            <div className="rl-card">
+              <div className="rl-card-header">
+                <div className="rl-card-title">Fluxo operacional</div>
+                <div className="rl-card-subtitle">
+                  Atualize rapidamente a etapa atual da ordem de serviço.
+                </div>
+              </div>
+
+              <div className="rl-card-body">
+                <div className="rl-inline">
+                  <button
+                    className="rl-btn rl-btn-dark"
+                    disabled={loadingAcao || os.status === "ABERTA"}
+                    onClick={() => alterarStatusOS("ABERTA", "Status alterado para ABERTA")}
+                  >
+                    Marcar como aberta
+                  </button>
+
+                  <button
+                    className="rl-btn rl-btn-primary"
+                    disabled={loadingAcao || os.status === "EM_EXECUCAO"}
+                    onClick={() =>
+                      alterarStatusOS("EM_EXECUCAO", "Status alterado para EM_EXECUCAO")
+                    }
+                  >
+                    Em execução
+                  </button>
+
+                  <button
+                    className="rl-btn rl-btn-warning"
+                    disabled={loadingAcao || os.status === "AGUARDANDO_APROVACAO"}
+                    onClick={() =>
+                      alterarStatusOS(
+                        "AGUARDANDO_APROVACAO",
+                        "Status alterado para AGUARDANDO_APROVACAO"
+                      )
+                    }
+                  >
+                    Aguardando aprovação
+                  </button>
+
+                  <button
+                    className="rl-btn rl-btn-secondary"
+                    disabled={loadingAcao || os.status === "AGUARDANDO_PECA"}
+                    onClick={() =>
+                      alterarStatusOS(
+                        "AGUARDANDO_PECA",
+                        "Status alterado para AGUARDANDO_PECA"
+                      )
+                    }
+                  >
+                    Aguardando peça
+                  </button>
+
+                  <button
+                    className="rl-btn rl-btn-success"
+                    disabled={loadingAcao || os.status === "FINALIZADA"}
+                    onClick={finalizarOS}
+                  >
+                    Finalizar OS
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
 
           <section className="rl-grid cols-3" id="resumo">
             <div className="rl-card rl-kpi">
@@ -915,7 +919,7 @@ export default function OSPage() {
               <div className="rl-card-header">
                 <div className="rl-card-title">Orçamentos</div>
                 <div className="rl-card-subtitle">
-                  Gere versões, aprove ou rejeite diretamente pela OS.
+                  Gere versões, acompanhe o status e envie para aprovação no canal do cliente.
                 </div>
               </div>
 
@@ -928,6 +932,10 @@ export default function OSPage() {
                   >
                     {loadingAcao ? "Processando..." : "Gerar orçamento"}
                   </button>
+                </div>
+
+                <div style={{ marginTop: 14 }} className="rl-alert rl-alert-info">
+                  A aprovação e a rejeição do orçamento serão feitas na tela externa do cliente.
                 </div>
 
                 <div style={{ marginTop: 18 }} className="rl-list">
@@ -966,27 +974,7 @@ export default function OSPage() {
                           </div>
                         </div>
 
-                        <span className={getOrcamentoBadgeClass(orc.status)}>
-                          {orc.status}
-                        </span>
-                      </div>
-
-                      <div style={{ marginTop: 12 }} className="rl-inline">
-                        <button
-                          className="rl-btn rl-btn-success"
-                          disabled={loadingAcao || orc.status === "APROVADO"}
-                          onClick={() => aprovarOrcamento(orc.id)}
-                        >
-                          Aprovar
-                        </button>
-
-                        <button
-                          className="rl-btn rl-btn-secondary"
-                          disabled={loadingAcao || orc.status === "REJEITADO"}
-                          onClick={() => rejeitarOrcamento(orc.id)}
-                        >
-                          Rejeitar
-                        </button>
+                        <StatusBadge status={orc.status} />
                       </div>
                     </div>
                   ))}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import AppSidebar from "../components/AppSidebar";
+import StatusBadge from "../components/StatusBadge";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
@@ -32,12 +33,6 @@ async function apiFetch(url, options = {}) {
   }
 
   return data;
-}
-
-function getStatusClass(status) {
-  if (status === "FINALIZADA") return "rl-badge rl-badge-final";
-  if (status === "ABERTA") return "rl-badge rl-badge-open";
-  return "rl-badge rl-badge-default";
 }
 
 export default function Home() {
@@ -232,9 +227,7 @@ export default function Home() {
                         </div>
 
                         <div>
-                          <span className={getStatusClass(os.status)}>
-                            {os.status || "SEM STATUS"}
-                          </span>
+                          <StatusBadge status={os.status} />
                         </div>
                       </div>
                     </Link>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import AppSidebar from "../../components/AppSidebar";
+import StatusBadge from "../../components/StatusBadge";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
@@ -34,10 +35,22 @@ async function apiFetch(url, options = {}) {
   return data;
 }
 
-function getStatusClass(status) {
-  if (status === "FINALIZADA") return "rl-badge rl-badge-final";
+function getColumnBadgeClass(status) {
   if (status === "ABERTA") return "rl-badge rl-badge-open";
+  if (status === "EM_EXECUCAO") return "rl-badge rl-badge-info";
+  if (status === "AGUARDANDO_APROVACAO") return "rl-badge rl-badge-danger";
+  if (status === "AGUARDANDO_PECA") return "rl-badge rl-badge-default";
+  if (status === "FINALIZADA") return "rl-badge rl-badge-final";
   return "rl-badge rl-badge-default";
+}
+
+function getColumnAccent(status) {
+  if (status === "ABERTA") return "#f59e0b";
+  if (status === "EM_EXECUCAO") return "#2563eb";
+  if (status === "AGUARDANDO_APROVACAO") return "#d72638";
+  if (status === "AGUARDANDO_PECA") return "#64748b";
+  if (status === "FINALIZADA") return "#198754";
+  return "#64748b";
 }
 
 function CardOS({ os }) {
@@ -45,10 +58,11 @@ function CardOS({ os }) {
     <div
       className="rl-board-card"
       style={{
-        borderRadius: 16,
+        borderRadius: 18,
         padding: 16,
         border: "1px solid var(--border)",
         background: "#fff",
+        boxShadow: "var(--shadow-sm)",
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -78,13 +92,13 @@ function CardOS({ os }) {
             </div>
           </div>
 
-          <span className={getStatusClass(os.status)}>{os.status}</span>
+          <StatusBadge status={os.status} />
         </div>
 
         <div
           style={{
-            padding: "10px 12px",
-            borderRadius: 12,
+            padding: "12px 14px",
+            borderRadius: 14,
             background: "var(--surface-2)",
             border: "1px solid var(--border)",
           }}
@@ -103,17 +117,17 @@ function CardOS({ os }) {
           <div
             style={{
               marginTop: 4,
-              fontSize: 24,
+              fontSize: 26,
               fontWeight: 900,
               color: "var(--sidebar)",
-              letterSpacing: "0.03em",
+              letterSpacing: "0.04em",
             }}
           >
             {os.placa || "-"}
           </div>
         </div>
 
-        <div className="rl-os-meta" style={{ lineHeight: 1.6 }}>
+        <div className="rl-os-meta" style={{ lineHeight: 1.7 }}>
           <strong style={{ color: "var(--text)" }}>Cliente:</strong>{" "}
           {os.cliente || "Não informado"}
           <br />
@@ -157,15 +171,18 @@ function CardOS({ os }) {
   );
 }
 
-function ColunaFila({ titulo, quantidade, badgeClass, lista, vazio }) {
+function ColunaFila({ titulo, statusKey, lista, vazio }) {
+  const accent = getColumnAccent(statusKey);
+
   return (
     <div
       className="rl-board-column"
       style={{
         background: "#f4f7fb",
-        borderRadius: 20,
+        borderRadius: 22,
         padding: 16,
         border: "1px solid var(--border)",
+        minHeight: 220,
       }}
     >
       <div
@@ -175,12 +192,21 @@ function ColunaFila({ titulo, quantidade, badgeClass, lista, vazio }) {
           gap: 10,
           alignItems: "center",
           marginBottom: 14,
+          paddingBottom: 10,
+          borderBottom: `3px solid ${accent}`,
         }}
       >
-        <div className="rl-board-title" style={{ marginBottom: 0 }}>
+        <div
+          className="rl-board-title"
+          style={{
+            marginBottom: 0,
+            fontSize: 17,
+          }}
+        >
           {titulo}
         </div>
-        <span className={badgeClass}>{quantidade}</span>
+
+        <span className={getColumnBadgeClass(statusKey)}>{lista.length}</span>
       </div>
 
       <div className="rl-board-stack">
@@ -225,12 +251,25 @@ export default function FilaPage() {
     [listaOS]
   );
 
+  const emExecucao = useMemo(
+    () => listaOS.filter((os) => os.status === "EM_EXECUCAO"),
+    [listaOS]
+  );
+
+  const aguardandoAprovacao = useMemo(
+    () => listaOS.filter((os) => os.status === "AGUARDANDO_APROVACAO"),
+    [listaOS]
+  );
+
+  const aguardandoPeca = useMemo(
+    () => listaOS.filter((os) => os.status === "AGUARDANDO_PECA"),
+    [listaOS]
+  );
+
   const finalizadas = useMemo(
     () => listaOS.filter((os) => os.status === "FINALIZADA"),
     [listaOS]
   );
-
-  const recentes = useMemo(() => listaOS.slice(0, 10), [listaOS]);
 
   return (
     <div className="rl-app">
@@ -240,8 +279,10 @@ export default function FilaPage() {
         footerTitle="Resumo da fila"
         footerLines={[
           `Abertas: ${abertas.length}`,
+          `Em execução: ${emExecucao.length}`,
+          `Aguardando aprovação: ${aguardandoAprovacao.length}`,
+          `Aguardando peça: ${aguardandoPeca.length}`,
           `Finalizadas: ${finalizadas.length}`,
-          `Recentes: ${recentes.length}`,
         ]}
       />
 
@@ -266,7 +307,7 @@ export default function FilaPage() {
             <div>
               <h1 className="rl-page-title">Fila de carros</h1>
               <p className="rl-page-subtitle">
-                Visual operacional das ordens de serviço para acompanhamento rápido da oficina.
+                Painel operacional para acompanhar a etapa atual de cada veículo na oficina.
               </p>
             </div>
 
@@ -287,23 +328,29 @@ export default function FilaPage() {
             </div>
           )}
 
-          <section className="rl-grid cols-3" style={{ marginBottom: 24 }}>
+          <section className="rl-grid cols-4" style={{ marginBottom: 24 }}>
             <div className="rl-card rl-kpi">
               <div className="rl-kpi-label">Abertas</div>
               <div className="rl-kpi-value">{abertas.length}</div>
-              <div className="rl-kpi-foot">Ordens em atendimento</div>
+              <div className="rl-kpi-foot">Recepção e entrada</div>
             </div>
 
             <div className="rl-card rl-kpi">
-              <div className="rl-kpi-label">Finalizadas</div>
-              <div className="rl-kpi-value">{finalizadas.length}</div>
-              <div className="rl-kpi-foot">Serviços concluídos</div>
+              <div className="rl-kpi-label">Em execução</div>
+              <div className="rl-kpi-value">{emExecucao.length}</div>
+              <div className="rl-kpi-foot">Serviço em andamento</div>
             </div>
 
             <div className="rl-card rl-kpi">
-              <div className="rl-kpi-label">Recentes</div>
-              <div className="rl-kpi-value">{recentes.length}</div>
-              <div className="rl-kpi-foot">Últimas O.S carregadas</div>
+              <div className="rl-kpi-label">Aguardando aprovação</div>
+              <div className="rl-kpi-value">{aguardandoAprovacao.length}</div>
+              <div className="rl-kpi-foot">Orçamento pendente</div>
+            </div>
+
+            <div className="rl-card rl-kpi">
+              <div className="rl-kpi-label">Aguardando peça</div>
+              <div className="rl-kpi-value">{aguardandoPeca.length}</div>
+              <div className="rl-kpi-foot">Paradas por falta de item</div>
             </div>
           </section>
 
@@ -312,31 +359,60 @@ export default function FilaPage() {
               <div className="rl-card-body">Carregando fila...</div>
             </div>
           ) : (
-            <div className="rl-board">
-              <ColunaFila
-                titulo="Abertas"
-                quantidade={abertas.length}
-                badgeClass="rl-badge rl-badge-open"
-                lista={abertas}
-                vazio="Nenhuma OS aberta no momento."
-              />
+            <>
+              <section className="rl-grid cols-4" style={{ marginBottom: 24 }}>
+                <ColunaFila
+                  titulo="Abertas"
+                  statusKey="ABERTA"
+                  lista={abertas}
+                  vazio="Nenhuma OS aberta no momento."
+                />
 
-              <ColunaFila
-                titulo="Finalizadas"
-                quantidade={finalizadas.length}
-                badgeClass="rl-badge rl-badge-final"
-                lista={finalizadas}
-                vazio="Nenhuma OS finalizada carregada."
-              />
+                <ColunaFila
+                  titulo="Em execução"
+                  statusKey="EM_EXECUCAO"
+                  lista={emExecucao}
+                  vazio="Nenhuma OS em execução."
+                />
 
-              <ColunaFila
-                titulo="Recentes"
-                quantidade={recentes.length}
-                badgeClass="rl-badge rl-badge-default"
-                lista={recentes}
-                vazio="Nenhuma OS recente encontrada."
-              />
-            </div>
+                <ColunaFila
+                  titulo="Aguardando aprovação"
+                  statusKey="AGUARDANDO_APROVACAO"
+                  lista={aguardandoAprovacao}
+                  vazio="Nenhuma OS aguardando aprovação."
+                />
+
+                <ColunaFila
+                  titulo="Aguardando peça"
+                  statusKey="AGUARDANDO_PECA"
+                  lista={aguardandoPeca}
+                  vazio="Nenhuma OS aguardando peça."
+                />
+              </section>
+
+              <section className="rl-section">
+                <div className="rl-card">
+                  <div className="rl-card-header">
+                    <div className="rl-card-title">Finalizadas</div>
+                    <div className="rl-card-subtitle">
+                      Ordens concluídas e prontas para consulta histórica.
+                    </div>
+                  </div>
+
+                  <div className="rl-card-body">
+                    {finalizadas.length === 0 ? (
+                      <div className="rl-empty">Nenhuma OS finalizada carregada.</div>
+                    ) : (
+                      <div className="rl-list">
+                        {finalizadas.map((os) => (
+                          <CardOS key={os.id} os={os} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+            </>
           )}
         </main>
       </div>
