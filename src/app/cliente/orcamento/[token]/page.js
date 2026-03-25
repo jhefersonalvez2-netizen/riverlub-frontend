@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import StatusBadge from "../../../../components/StatusBadge";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
@@ -31,13 +32,6 @@ async function apiFetch(url, options = {}) {
   }
 
   return data;
-}
-
-function getStatusClass(status) {
-  if (status === "APROVADO") return "rl-badge rl-badge-final";
-  if (status === "REJEITADO") return "rl-badge rl-badge-danger";
-  if (status === "PENDENTE") return "rl-badge rl-badge-open";
-  return "rl-badge rl-badge-default";
 }
 
 export default function ClienteOrcamentoPage() {
@@ -158,6 +152,9 @@ export default function ClienteOrcamentoPage() {
     return Number(orcamento.valor_total || 0);
   }, [orcamento]);
 
+  const orcamentoRespondido =
+    orcamento?.status === "APROVADO" || orcamento?.status === "REJEITADO";
+
   if (loading) {
     return (
       <div className="rl-auth-shell" style={{ padding: 24 }}>
@@ -202,7 +199,8 @@ export default function ClienteOrcamentoPage() {
       >
         <div
           style={{
-            background: "linear-gradient(180deg, rgba(1,21,82,0.98) 0%, rgba(8,36,111,0.98) 100%)",
+            background:
+              "linear-gradient(180deg, rgba(1,21,82,0.98) 0%, rgba(8,36,111,0.98) 100%)",
             color: "#fff",
             padding: 28,
             display: "flex",
@@ -248,14 +246,30 @@ export default function ClienteOrcamentoPage() {
                 Olá, {orcamento.cliente || "cliente"}
               </div>
               <div className="rl-page-subtitle">
-                Revise os itens abaixo e confirme sua decisão sobre este orçamento.
+                Sua oficina enviou este orçamento para análise. Revise os itens abaixo e escolha como deseja continuar.
               </div>
             </div>
 
-            <span className={getStatusClass(orcamento.status)}>
-              {orcamento.status}
-            </span>
+            <StatusBadge status={orcamento.status} />
           </div>
+
+          {orcamento.status === "APROVADO" && (
+            <div className="rl-alert rl-alert-success" style={{ marginBottom: 18 }}>
+              Você já aprovou este orçamento. A oficina pode seguir com a execução do serviço.
+            </div>
+          )}
+
+          {orcamento.status === "REJEITADO" && (
+            <div className="rl-alert rl-alert-danger" style={{ marginBottom: 18 }}>
+              Este orçamento foi rejeitado. Se precisar, você ainda pode registrar uma solicitação de alteração abaixo.
+            </div>
+          )}
+
+          {orcamento.status === "PENDENTE" && (
+            <div className="rl-alert rl-alert-info" style={{ marginBottom: 18 }}>
+              Este orçamento está aguardando sua resposta.
+            </div>
+          )}
 
           <section className="rl-grid cols-2">
             <div className="rl-card">
@@ -362,9 +376,9 @@ export default function ClienteOrcamentoPage() {
           <section className="rl-section">
             <div className="rl-card">
               <div className="rl-card-header">
-                <div className="rl-card-title">Sua decisão</div>
+                <div className="rl-card-title">Sua resposta</div>
                 <div className="rl-card-subtitle">
-                  Você pode aprovar, rejeitar ou solicitar alteração neste orçamento.
+                  Escolha uma das opções abaixo para continuar o atendimento.
                 </div>
               </div>
 
@@ -372,7 +386,7 @@ export default function ClienteOrcamentoPage() {
                 <div className="rl-inline">
                   <button
                     className="rl-btn rl-btn-success"
-                    disabled={loadingAcao || orcamento.status === "APROVADO"}
+                    disabled={loadingAcao || orcamentoRespondido}
                     onClick={aprovar}
                   >
                     Aprovar orçamento
@@ -380,7 +394,7 @@ export default function ClienteOrcamentoPage() {
 
                   <button
                     className="rl-btn rl-btn-danger"
-                    disabled={loadingAcao || orcamento.status === "REJEITADO"}
+                    disabled={loadingAcao || orcamentoRespondido}
                     onClick={rejeitar}
                   >
                     Rejeitar orçamento
