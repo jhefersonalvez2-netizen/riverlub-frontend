@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
@@ -12,8 +12,8 @@ async function apiFetch(url, options = {}) {
     headers: {
       "Content-Type": "application/json",
       "x-api-key": API_KEY,
-      ...(options.headers || {})
-    }
+      ...(options.headers || {}),
+    },
   });
 
   const contentType = response.headers.get("content-type") || "";
@@ -27,13 +27,21 @@ async function apiFetch(url, options = {}) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.erro || "Erro na requisição");
+    const erro = new Error(data.erro || "Erro na requisição");
+    erro.detalhe = data.detalhe || null;
+    throw erro;
   }
 
   return data;
 }
 
-export default function OS() {
+function getStatusClass(status) {
+  if (status === "FINALIZADA") return "rl-badge rl-badge-final";
+  if (status === "ABERTA") return "rl-badge rl-badge-open";
+  return "rl-badge rl-badge-default";
+}
+
+export default function OSPage() {
   const { id } = useParams();
 
   const [os, setOS] = useState(null);
@@ -48,6 +56,10 @@ export default function OS() {
 
   const [vinculacaoCatalogo, setVinculacaoCatalogo] = useState(null);
   const [loadingVinculacao, setLoadingVinculacao] = useState(false);
+
+  const [candidatosCatalogo, setCandidatosCatalogo] = useState([]);
+  const [loadingCandidatos, setLoadingCandidatos] = useState(false);
+  const [buscaCatalogoExecutada, setBuscaCatalogoExecutada] = useState(false);
 
   const [abertoSistema, setAbertoSistema] = useState({});
   const [abertoSub, setAbertoSub] = useState({});
@@ -92,7 +104,7 @@ export default function OS() {
         carregarItens(),
         carregarCatalogo(),
         carregarOrcamentos(),
-        carregarLogs()
+        carregarLogs(),
       ]);
     } catch (e) {
       console.error(e);
@@ -123,7 +135,7 @@ export default function OS() {
 
     try {
       const data = await apiFetch(`${API}/os/${id}/orcamentos`, {
-        method: "POST"
+        method: "POST",
       });
 
       if (data.sucesso) {
@@ -144,7 +156,7 @@ export default function OS() {
 
     try {
       const data = await apiFetch(`${API}/os/orcamentos/${orcamentoId}/aprovar`, {
-        method: "PUT"
+        method: "PUT",
       });
 
       if (data.sucesso) {
@@ -165,7 +177,7 @@ export default function OS() {
 
     try {
       const data = await apiFetch(`${API}/os/orcamentos/${orcamentoId}/rejeitar`, {
-        method: "PUT"
+        method: "PUT",
       });
 
       if (data.sucesso) {
@@ -186,7 +198,7 @@ export default function OS() {
 
     try {
       const data = await apiFetch(`${API}/os/${id}/finalizar`, {
-        method: "PUT"
+        method: "PUT",
       });
 
       if (data.sucesso) {
@@ -207,7 +219,7 @@ export default function OS() {
 
     try {
       const data = await apiFetch(`${API}/os/${id}/reabrir`, {
-        method: "PUT"
+        method: "PUT",
       });
 
       if (data.sucesso) {
@@ -223,22 +235,53 @@ export default function OS() {
     setLoadingAcao(false);
   }
 
-  async function vincularVeiculoCatalogo() {
+  async function buscarCandidatosCatalogo() {
+    setLoadingCandidatos(true);
+    setBuscaCatalogoExecutada(true);
+    setCandidatosCatalogo([]);
+
+    try {
+      const data = await apiFetch(`${API}/os/${id}/candidatos-catalogo`);
+
+      if (data.sucesso) {
+        setCandidatosCatalogo(data.candidatos || []);
+
+        if (!data.candidatos || data.candidatos.length === 0) {
+          alert("Nenhum candidato encontrado para este veículo.");
+        }
+      }
+    } catch (e) {
+      console.error("Erro ao buscar candidatos:", e);
+      alert("Erro ao buscar candidatos no catálogo externo");
+    }
+
+    setLoadingCandidatos(false);
+  }
+
+  async function selecionarCandidatoCatalogo(candidato) {
     setLoadingVinculacao(true);
 
     try {
-      const data = await apiFetch(`${API}/os/${id}/vincular-catalogo`, {
-        method: "POST"
+      const data = await apiFetch(`${API}/os/${id}/selecionar-catalogo`, {
+        method: "POST",
+        body: JSON.stringify({
+          catalog_vehicle_id: candidato.catalog_vehicle_id,
+          catalog_model_id: candidato.catalog_model_id,
+          catalog_type_id: candidato.catalog_type_id,
+          catalog_lang_id: candidato.catalog_lang_id,
+          catalog_country_filter_id: candidato.catalog_country_filter_id,
+        }),
       });
 
       if (data.sucesso) {
         setVinculacaoCatalogo(data.vinculacao);
+        setCandidatosCatalogo([]);
         alert("Veículo vinculado ao catálogo externo");
         await carregarLogs();
       }
     } catch (e) {
-      console.error(e);
-      alert("Erro ao vincular veículo ao catálogo externo");
+      console.error("Erro ao selecionar candidato:", e);
+      alert("Erro ao salvar seleção do catálogo");
     }
 
     setLoadingVinculacao(false);
@@ -247,15 +290,15 @@ export default function OS() {
   function toggleSistema(nome) {
     setAbertoSistema((prev) => ({
       ...prev,
-      [nome]: !prev[nome]
+      [nome]: !prev[nome],
     }));
   }
 
   function toggleSub(sistema, sub) {
-    const chave = sistema + "_" + sub;
+    const chave = `${sistema}_${sub}`;
     setAbertoSub((prev) => ({
       ...prev,
-      [chave]: !prev[chave]
+      [chave]: !prev[chave],
     }));
   }
 
@@ -281,9 +324,9 @@ export default function OS() {
             item_id: null,
             nome,
             quantidade: 1,
-            preco_unitario: 0
-          }))
-        })
+            preco_unitario: 0,
+          })),
+        }),
       });
 
       if (data.sucesso) {
@@ -304,7 +347,7 @@ export default function OS() {
 
     try {
       const data = await apiFetch(`${API}/os/itens/${idItem}`, {
-        method: "DELETE"
+        method: "DELETE",
       });
 
       if (data.sucesso) {
@@ -329,8 +372,8 @@ export default function OS() {
         method: "PUT",
         body: JSON.stringify({
           preco_unitario: novo,
-          quantidade: item.quantidade
-        })
+          quantidade: item.quantidade,
+        }),
       });
 
       if (data.sucesso) {
@@ -354,8 +397,8 @@ export default function OS() {
         method: "PUT",
         body: JSON.stringify({
           preco_unitario: item.preco_unitario,
-          quantidade: novaQtd
-        })
+          quantidade: novaQtd,
+        }),
       });
 
       if (data.sucesso) {
@@ -397,8 +440,8 @@ export default function OS() {
           item_id: item.article_id,
           nome: `${item.nome} - ${item.fabricante} (${item.codigo})`,
           quantidade: 1,
-          preco_unitario: 0
-        })
+          preco_unitario: 0,
+        }),
       });
 
       if (data.sucesso) {
@@ -420,322 +463,573 @@ export default function OS() {
     }
   }, [id]);
 
+  const total = useMemo(() => {
+    return itens.reduce((acc, i) => {
+      const valor = Number(i.preco_total || 0);
+      return acc + (Number.isNaN(valor) ? 0 : valor);
+    }, 0);
+  }, [itens]);
+
   if (loadingPagina) {
-    return <div style={{ padding: "20px" }}>Carregando OS...</div>;
+    return (
+      <div className="rl-app">
+        <div style={{ flex: 1 }}>
+          <div className="rl-mobile-top">
+            <div className="rl-brand-title">RiverLub</div>
+            <div className="rl-brand-subtitle">Carregando OS</div>
+          </div>
+          <main className="rl-main">Carregando OS...</main>
+        </div>
+      </div>
+    );
   }
 
   if (erro) {
-    return <div style={{ padding: "20px", color: "red" }}>{erro}</div>;
+    return (
+      <div className="rl-app">
+        <div style={{ flex: 1 }}>
+          <div className="rl-mobile-top">
+            <div className="rl-brand-title">RiverLub</div>
+          </div>
+          <main className="rl-main">
+            <div className="rl-alert rl-alert-danger">{erro}</div>
+          </main>
+        </div>
+      </div>
+    );
   }
 
   if (!os) {
-    return <div style={{ padding: "20px" }}>OS não encontrada.</div>;
+    return (
+      <div className="rl-app">
+        <div style={{ flex: 1 }}>
+          <div className="rl-mobile-top">
+            <div className="rl-brand-title">RiverLub</div>
+          </div>
+          <main className="rl-main">OS não encontrada.</main>
+        </div>
+      </div>
+    );
   }
 
-  const total = itens.reduce((acc, i) => {
-    const valor = Number(i.preco_total || 0);
-    return acc + (Number.isNaN(valor) ? 0 : valor);
-  }, 0);
-
-  const statusColor =
-    os.status === "FINALIZADA" ? "green" :
-    os.status === "ABERTA" ? "orange" :
-    "#333";
-
   return (
-    <div
-      style={{
-        padding: "20px",
-        fontFamily: "Arial",
-        maxWidth: "900px",
-        margin: "0 auto"
-      }}
-    >
-      <h1 style={{ marginBottom: "12px" }}>Ordem de Serviço #{os.id}</h1>
-
-      <div
-        style={{
-          display: "inline-block",
-          padding: "8px 12px",
-          background: statusColor,
-          color: "white",
-          borderRadius: "6px",
-          marginBottom: "20px"
-        }}
-      >
-        Status: {os.status}
-      </div>
-
-      <div style={{ marginBottom: "20px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
-        <button
-          disabled={loadingAcao || os.status === "FINALIZADA"}
-          onClick={finalizarOS}
-          style={{ padding: "10px 14px" }}
-        >
-          Finalizar OS
-        </button>
-
-        <button
-          disabled={loadingAcao || os.status === "ABERTA"}
-          onClick={reabrirOS}
-          style={{ padding: "10px 14px" }}
-        >
-          Reabrir OS
-        </button>
-      </div>
-
-      <h2>Cliente</h2>
-      <div style={{ lineHeight: 1.6 }}>
-        Nome: {os.cliente}<br />
-        Telefone: {os.telefone}
-      </div>
-
-      <h2 style={{ marginTop: "30px" }}>Veículo</h2>
-      <div style={{ lineHeight: 1.6 }}>
-        Placa: {os.placa}<br />
-        Marca: {os.marca}<br />
-        Modelo: {os.modelo}<br />
-        Ano: {os.ano}<br />
-        Motor: {os.motor}
-      </div>
-
-<h2 style={{ marginTop: "30px" }}>Catálogo Externo</h2>
-
-<button
-  disabled={loadingVinculacao || loadingAcao}
-  onClick={vincularVeiculoCatalogo}
-  style={{ padding: "10px 14px", marginTop: "10px" }}
->
-  {loadingVinculacao ? "Vinculando..." : "Vincular veículo ao catálogo"}
-</button>
-
-{vinculacaoCatalogo && (
-  <div style={{ marginTop: "12px", lineHeight: 1.6 }}>
-    <b>Vinculado com sucesso</b><br />
-    Vehicle ID: {vinculacaoCatalogo.catalog_vehicle_id}<br />
-    Model ID: {vinculacaoCatalogo.catalog_model_id}<br />
-    Type ID: {vinculacaoCatalogo.catalog_type_id}
-  </div>
-)}
-
-      <h2 style={{ marginTop: "40px" }}>Itens da OS</h2>
-
-      {itens.length === 0 && <div>Nenhum item adicionado ainda.</div>}
-
-      {itens.map((i) => (
-        <div
-          key={i.id}
-          style={{
-            border: "1px solid #ccc",
-            padding: "12px",
-            marginBottom: "10px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "10px",
-            flexWrap: "wrap",
-            borderRadius: "8px"
-          }}
-        >
-          <div style={{ flex: 1, minWidth: "200px" }}>
-            <b>{i.nome}</b><br />
-            Qtd: {i.quantidade}<br />
-            Preço: R$ {i.preco_unitario}<br />
-            Total: R$ {i.preco_total}
-          </div>
-
-          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-            <button disabled={loadingAcao} onClick={() => alterarQtd(i, i.quantidade + 1)}>+</button>
-            <button disabled={loadingAcao} onClick={() => alterarQtd(i, i.quantidade - 1)}>-</button>
-            <button disabled={loadingAcao} onClick={() => editarPreco(i)}>Editar</button>
-            <button
-              disabled={loadingAcao}
-              onClick={() => removerItem(i.id)}
-              style={{ background: "red", color: "white" }}
-            >
-              X
-            </button>
-          </div>
+    <div className="rl-app">
+      <aside className="rl-sidebar">
+        <div className="rl-brand">
+          <div className="rl-brand-title">RiverLub</div>
+          <div className="rl-brand-subtitle">Ordem de serviço</div>
         </div>
-      ))}
 
-      <h2>Total da OS: R$ {total.toFixed(2)}</h2>
+        <nav className="rl-nav">
+          <div className="rl-nav-label">Navegação</div>
+          <a className="rl-nav-item" href="/">
+            Painel atendente
+          </a>
+          <a className="rl-nav-item active" href={`/os/${os.id}`}>
+            OS #{os.id}
+          </a>
+          <a className="rl-nav-item" href="#itens">
+            Itens
+          </a>
+          <a className="rl-nav-item" href="#orcamentos">
+            Orçamentos
+          </a>
+          <a className="rl-nav-item" href="#ia">
+            Diagnóstico IA
+          </a>
+          <a className="rl-nav-item" href="#historico">
+            Histórico
+          </a>
+        </nav>
 
-      <h2 style={{ marginTop: "40px" }}>Catálogo Externo - Teste</h2>
+        <div className="rl-sidebar-footer">
+          <strong>Veículo</strong>
+          <br />
+          {os.modelo || "Modelo não informado"}
+          <br />
+          Placa: {os.placa || "-"}
+        </div>
+      </aside>
 
-      <button
-        disabled={loadingCatalogoExterno || loadingAcao}
-        onClick={buscarFiltroArCompativel}
-        style={{ padding: "10px 14px" }}
-      >
-        {loadingCatalogoExterno ? "Buscando..." : "Buscar filtro de ar compatível"}
-      </button>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="rl-mobile-top">
+          <div className="rl-brand-title">RiverLub</div>
+          <div className="rl-brand-subtitle">OS #{os.id}</div>
+        </div>
 
-      <div style={{ marginTop: "20px" }}>
-        {catalogoExterno.map((item) => (
-          <div
-            key={item.article_id}
-            style={{
-              border: "1px solid #555",
-              padding: "12px",
-              marginBottom: "10px",
-              borderRadius: "8px",
-              display: "flex",
-              gap: "12px",
-              alignItems: "center",
-              flexWrap: "wrap"
-            }}
-          >
-            {item.imagem && (
-              <img
-                src={item.imagem}
-                alt={item.nome}
-                style={{ width: "80px", height: "80px", objectFit: "contain", background: "#fff" }}
-              />
-            )}
-
-            <div style={{ flex: 1, minWidth: "220px" }}>
-              <b>{item.nome}</b><br />
-              Fabricante: {item.fabricante}<br />
-              Código: {item.codigo}
+        <main className="rl-main">
+          <div className="rl-topbar">
+            <div>
+              <h1 className="rl-page-title">Ordem de Serviço #{os.id}</h1>
+              <p className="rl-page-subtitle">
+                Gestão completa do atendimento, itens, orçamento e diagnóstico.
+              </p>
             </div>
 
-            <button
-              disabled={loadingAcao}
-              onClick={() => adicionarItemCatalogoExterno(item)}
-              style={{ padding: "10px 14px" }}
-            >
-              Adicionar na OS
-            </button>
-          </div>
-        ))}
-      </div>
-
-      <h2 style={{ marginTop: "40px" }}>Orçamentos</h2>
-
-      <button disabled={loadingAcao} onClick={gerarOrcamento} style={{ padding: "10px 14px" }}>
-        {loadingAcao ? "Processando..." : "Gerar orçamento"}
-      </button>
-
-      <div style={{ marginTop: "20px" }}>
-        {orcamentos.length === 0 && <div>Nenhum orçamento gerado ainda.</div>}
-
-        {orcamentos.map((orc) => (
-          <div
-            key={orc.id}
-            style={{
-              border: "1px solid #999",
-              padding: "12px",
-              marginBottom: "10px",
-              borderRadius: "8px"
-            }}
-          >
-            <b>Versão {orc.versao}</b><br />
-            Status: {orc.status}<br />
-            Total: R$ {Number(orc.valor_total || 0).toFixed(2)}<br />
-            Criado em: {new Date(orc.criado_em).toLocaleString("pt-BR")}<br />
-            {orc.aprovado_em && (
-              <>
-                Aprovado em: {new Date(orc.aprovado_em).toLocaleString("pt-BR")}<br />
-              </>
-            )}
-
-            <div style={{ marginTop: "10px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            <div className="rl-topbar-actions">
+              <span className={getStatusClass(os.status)}>{os.status}</span>
               <button
-                disabled={loadingAcao || orc.status === "APROVADO"}
-                onClick={() => aprovarOrcamento(orc.id)}
+                className="rl-btn rl-btn-success"
+                disabled={loadingAcao || os.status === "FINALIZADA"}
+                onClick={finalizarOS}
               >
-                Aprovar
+                Finalizar OS
               </button>
-
               <button
-                disabled={loadingAcao || orc.status === "REJEITADO"}
-                onClick={() => rejeitarOrcamento(orc.id)}
+                className="rl-btn rl-btn-secondary"
+                disabled={loadingAcao || os.status === "ABERTA"}
+                onClick={reabrirOS}
               >
-                Rejeitar
+                Reabrir OS
               </button>
             </div>
           </div>
-        ))}
-      </div>
 
-      <h2 style={{ marginTop: "50px" }}>Diagnóstico IA</h2>
-
-      <button disabled={loadingAcao} onClick={gerarArvoreIA} style={{ padding: "10px 14px" }}>
-        {loadingAcao ? "Carregando..." : "Gerar diagnóstico IA"}
-      </button>
-
-      {arvore &&
-        Object.keys(arvore).map((sistema) => (
-          <div key={sistema} style={{ marginTop: "10px" }}>
-            <div
-              style={{ cursor: "pointer", fontWeight: "bold" }}
-              onClick={() => toggleSistema(sistema)}
-            >
-              {abertoSistema[sistema] ? "▼" : "▶"} {sistema}
-            </div>
-
-            {abertoSistema[sistema] &&
-              Object.keys(arvore[sistema]).map((sub) => {
-                const chave = sistema + "_" + sub;
-
-                return (
-                  <div key={sub} style={{ marginLeft: "20px", marginTop: "6px" }}>
-                    <div
-                      style={{ cursor: "pointer" }}
-                      onClick={() => toggleSub(sistema, sub)}
-                    >
-                      {abertoSub[chave] ? "▼" : "▶"} {sub}
-                    </div>
-
-                    {abertoSub[chave] &&
-                      arvore[sistema][sub].map((peca) => (
-                        <div key={peca} style={{ marginLeft: "20px", marginTop: "4px" }}>
-                          <input
-                            type="checkbox"
-                            autoComplete="off"
-                            checked={selecionados.includes(peca)}
-                            onChange={() => togglePeca(peca)}
-                          />{" "}
-                          {peca}
-                        </div>
-                      ))}
+          <section className="rl-grid cols-2">
+            <div className="rl-card">
+              <div className="rl-card-header">
+                <div className="rl-card-title">Cliente</div>
+              </div>
+              <div className="rl-card-body">
+                <div className="rl-data-grid">
+                  <div className="rl-data-item">
+                    <div className="rl-data-label">Nome</div>
+                    <div className="rl-data-value">{os.cliente || "-"}</div>
                   </div>
-                );
-              })}
-          </div>
-        ))}
+                  <div className="rl-data-item">
+                    <div className="rl-data-label">Telefone</div>
+                    <div className="rl-data-value">{os.telefone || "-"}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-      {selecionados.length > 0 && (
-        <button
-          disabled={loadingAcao}
-          onClick={adicionarSelecionados}
-          style={{ marginTop: "20px", padding: "10px 14px" }}
-        >
-          {loadingAcao ? "Adicionando..." : "Adicionar peças selecionadas"}
-        </button>
-      )}
+            <div className="rl-card">
+              <div className="rl-card-header">
+                <div className="rl-card-title">Veículo</div>
+              </div>
+              <div className="rl-card-body">
+                <div className="rl-data-grid">
+                  <div className="rl-data-item">
+                    <div className="rl-data-label">Placa</div>
+                    <div className="rl-data-value">{os.placa || "-"}</div>
+                  </div>
+                  <div className="rl-data-item">
+                    <div className="rl-data-label">Marca</div>
+                    <div className="rl-data-value">{os.marca || "-"}</div>
+                  </div>
+                  <div className="rl-data-item">
+                    <div className="rl-data-label">Modelo</div>
+                    <div className="rl-data-value">{os.modelo || "-"}</div>
+                  </div>
+                  <div className="rl-data-item">
+                    <div className="rl-data-label">Ano</div>
+                    <div className="rl-data-value">{os.ano || "-"}</div>
+                  </div>
+                  <div className="rl-data-item">
+                    <div className="rl-data-label">Motor</div>
+                    <div className="rl-data-value">{os.motor || "-"}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
 
-      <h2 style={{ marginTop: "50px" }}>Histórico da OS</h2>
+          <section className="rl-section">
+            <div className="rl-card">
+              <div className="rl-card-header">
+                <div className="rl-card-title">Resumo financeiro</div>
+              </div>
+              <div className="rl-card-body">
+                <div className="rl-kpi-label">Total atual da OS</div>
+                <div className="rl-kpi-value">R$ {total.toFixed(2)}</div>
+                <div className="rl-kpi-foot">
+                  Baseado nos itens atualmente registrados.
+                </div>
+              </div>
+            </div>
+          </section>
 
-      <div style={{ marginTop: "20px" }}>
-        {logs.length === 0 && <div>Nenhum log encontrado.</div>}
+          <section className="rl-section" id="itens">
+            <div className="rl-card">
+              <div className="rl-card-header">
+                <div className="rl-card-title">Itens da OS</div>
+                <div className="rl-card-subtitle">
+                  Ajuste quantidades, preços e remova itens quando necessário.
+                </div>
+              </div>
 
-        {logs.map((log) => (
-          <div
-            key={log.id}
-            style={{
-              borderBottom: "1px solid #ddd",
-              padding: "10px 0"
-            }}
-          >
-            <b>{log.evento}</b><br />
-            <span style={{ color: "#666", fontSize: "14px" }}>
-              {new Date(log.criado_em).toLocaleString("pt-BR")}
-            </span>
-          </div>
-        ))}
+              <div className="rl-card-body">
+                {itens.length === 0 && (
+                  <div className="rl-empty">Nenhum item adicionado ainda.</div>
+                )}
+
+                <div className="rl-list">
+                  {itens.map((i) => (
+                    <div key={i.id} className="rl-item-card">
+                      <div style={{ flex: 1, minWidth: 220 }}>
+                        <div className="rl-os-title">{i.nome}</div>
+                        <div className="rl-os-meta">
+                          Quantidade: {i.quantidade}
+                          <br />
+                          Preço unitário: R$ {Number(i.preco_unitario || 0).toFixed(2)}
+                          <br />
+                          Total: R$ {Number(i.preco_total || 0).toFixed(2)}
+                        </div>
+                      </div>
+
+                      <div className="rl-item-actions">
+                        <button
+                          className="rl-small-btn"
+                          disabled={loadingAcao}
+                          onClick={() => alterarQtd(i, i.quantidade + 1)}
+                        >
+                          +
+                        </button>
+                        <button
+                          className="rl-small-btn"
+                          disabled={loadingAcao}
+                          onClick={() => alterarQtd(i, i.quantidade - 1)}
+                        >
+                          -
+                        </button>
+                        <button
+                          className="rl-small-btn"
+                          disabled={loadingAcao}
+                          onClick={() => editarPreco(i)}
+                        >
+                          Editar
+                        </button>
+                        <button
+                          className="rl-small-btn"
+                          disabled={loadingAcao}
+                          onClick={() => removerItem(i.id)}
+                          style={{
+                            background: "#fff1f2",
+                            color: "#b42318",
+                            borderColor: "#fecdd3",
+                          }}
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="rl-section">
+            <div className="rl-card">
+              <div className="rl-card-header">
+                <div className="rl-card-title">Catálogo externo</div>
+                <div className="rl-card-subtitle">
+                  Busca assistida e vínculo manual do veículo quando necessário.
+                </div>
+              </div>
+
+              <div className="rl-card-body">
+                <div className="rl-inline">
+                  <button
+                    className="rl-btn rl-btn-secondary"
+                    disabled={loadingCandidatos || loadingAcao}
+                    onClick={buscarCandidatosCatalogo}
+                  >
+                    {loadingCandidatos ? "Buscando..." : "Buscar candidatos do catálogo"}
+                  </button>
+
+                  <button
+                    className="rl-btn rl-btn-primary"
+                    disabled={loadingCatalogoExterno || loadingAcao}
+                    onClick={buscarFiltroArCompativel}
+                  >
+                    {loadingCatalogoExterno
+                      ? "Buscando..."
+                      : "Buscar filtro de ar compatível"}
+                  </button>
+                </div>
+
+                {buscaCatalogoExecutada &&
+                  !loadingCandidatos &&
+                  candidatosCatalogo.length === 0 && (
+                    <div style={{ marginTop: 14 }} className="rl-alert rl-alert-warning">
+                      Nenhum candidato encontrado para este veículo.
+                    </div>
+                  )}
+
+                {vinculacaoCatalogo && (
+                  <div style={{ marginTop: 14 }} className="rl-alert rl-alert-success">
+                    <strong>Vinculado com sucesso.</strong>
+                    <br />
+                    Vehicle ID: {vinculacaoCatalogo.catalog_vehicle_id}
+                    <br />
+                    Model ID: {vinculacaoCatalogo.catalog_model_id}
+                    <br />
+                    Type ID: {vinculacaoCatalogo.catalog_type_id}
+                  </div>
+                )}
+
+                {candidatosCatalogo.length > 0 && (
+                  <div style={{ marginTop: 18 }} className="rl-list">
+                    {candidatosCatalogo.map((candidato, index) => (
+                      <div
+                        key={`${candidato.catalog_vehicle_id}-${index}`}
+                        className="rl-list-item"
+                      >
+                        <div className="rl-os-title">{candidato.model_name}</div>
+                        <div className="rl-os-meta">
+                          Descrição: {candidato.descricao || "Sem descrição"}
+                          <br />
+                          Ano: {candidato.ano_inicio || "?"} até{" "}
+                          {candidato.ano_fim || "?"}
+                          <br />
+                          Motor: {candidato.motor || "Não informado"}
+                        </div>
+
+                        <div style={{ marginTop: 12 }}>
+                          <button
+                            className="rl-btn rl-btn-success"
+                            disabled={loadingVinculacao}
+                            onClick={() => selecionarCandidatoCatalogo(candidato)}
+                          >
+                            {loadingVinculacao
+                              ? "Salvando..."
+                              : "Selecionar este veículo"}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {catalogoExterno.length > 0 && (
+                  <div style={{ marginTop: 18 }} className="rl-list">
+                    {catalogoExterno.map((item) => (
+                      <div key={item.article_id} className="rl-list-item">
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 14,
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          {item.imagem && (
+                            <img
+                              src={item.imagem}
+                              alt={item.nome}
+                              style={{
+                                width: 84,
+                                height: 84,
+                                objectFit: "contain",
+                                background: "#fff",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: 12,
+                                padding: 6,
+                              }}
+                            />
+                          )}
+
+                          <div style={{ flex: 1, minWidth: 220 }}>
+                            <div className="rl-os-title">{item.nome}</div>
+                            <div className="rl-os-meta">
+                              Fabricante: {item.fabricante}
+                              <br />
+                              Código: {item.codigo}
+                            </div>
+                          </div>
+
+                          <button
+                            className="rl-btn rl-btn-success"
+                            disabled={loadingAcao}
+                            onClick={() => adicionarItemCatalogoExterno(item)}
+                          >
+                            Adicionar na OS
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section className="rl-section" id="orcamentos">
+            <div className="rl-card">
+              <div className="rl-card-header">
+                <div className="rl-card-title">Orçamentos</div>
+                <div className="rl-card-subtitle">
+                  Gere versões, aprove ou rejeite diretamente pela OS.
+                </div>
+              </div>
+
+              <div className="rl-card-body">
+                <div className="rl-inline">
+                  <button
+                    className="rl-btn rl-btn-primary"
+                    disabled={loadingAcao}
+                    onClick={gerarOrcamento}
+                  >
+                    {loadingAcao ? "Processando..." : "Gerar orçamento"}
+                  </button>
+                </div>
+
+                <div style={{ marginTop: 18 }} className="rl-list">
+                  {orcamentos.length === 0 && (
+                    <div className="rl-empty">Nenhum orçamento gerado ainda.</div>
+                  )}
+
+                  {orcamentos.map((orc) => (
+                    <div key={orc.id} className="rl-list-item">
+                      <div className="rl-os-title">Versão {orc.versao}</div>
+                      <div className="rl-os-meta">
+                        Status: {orc.status}
+                        <br />
+                        Total: R$ {Number(orc.valor_total || 0).toFixed(2)}
+                        <br />
+                        Criado em:{" "}
+                        {orc.criado_em
+                          ? new Date(orc.criado_em).toLocaleString("pt-BR")
+                          : "-"}
+                        <br />
+                        {orc.aprovado_em && (
+                          <>
+                            Aprovado em:{" "}
+                            {new Date(orc.aprovado_em).toLocaleString("pt-BR")}
+                            <br />
+                          </>
+                        )}
+                      </div>
+
+                      <div style={{ marginTop: 12 }} className="rl-inline">
+                        <button
+                          className="rl-btn rl-btn-success"
+                          disabled={loadingAcao || orc.status === "APROVADO"}
+                          onClick={() => aprovarOrcamento(orc.id)}
+                        >
+                          Aprovar
+                        </button>
+
+                        <button
+                          className="rl-btn rl-btn-secondary"
+                          disabled={loadingAcao || orc.status === "REJEITADO"}
+                          onClick={() => rejeitarOrcamento(orc.id)}
+                        >
+                          Rejeitar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="rl-section" id="ia">
+            <div className="rl-card">
+              <div className="rl-card-header">
+                <div className="rl-card-title">Diagnóstico IA</div>
+                <div className="rl-card-subtitle">
+                  Gere uma árvore técnica e selecione peças para incluir na OS.
+                </div>
+              </div>
+
+              <div className="rl-card-body">
+                <button
+                  className="rl-btn rl-btn-primary"
+                  disabled={loadingAcao}
+                  onClick={gerarArvoreIA}
+                >
+                  {loadingAcao ? "Carregando..." : "Gerar diagnóstico IA"}
+                </button>
+
+                {arvore &&
+                  Object.keys(arvore).map((sistema) => (
+                    <div key={sistema} className="rl-tree-block">
+                      <div
+                        className="rl-tree-toggle"
+                        onClick={() => toggleSistema(sistema)}
+                      >
+                        {abertoSistema[sistema] ? "▼" : "▶"} {sistema}
+                      </div>
+
+                      {abertoSistema[sistema] &&
+                        Object.keys(arvore[sistema]).map((sub) => {
+                          const chave = `${sistema}_${sub}`;
+
+                          return (
+                            <div key={sub} className="rl-tree-node" style={{ marginLeft: 20 }}>
+                              <div
+                                className="rl-tree-toggle"
+                                onClick={() => toggleSub(sistema, sub)}
+                              >
+                                {abertoSub[chave] ? "▼" : "▶"} {sub}
+                              </div>
+
+                              {abertoSub[chave] &&
+                                arvore[sistema][sub].map((peca) => (
+                                  <label key={peca} className="rl-checkbox-row">
+                                    <input
+                                      type="checkbox"
+                                      autoComplete="off"
+                                      checked={selecionados.includes(peca)}
+                                      onChange={() => togglePeca(peca)}
+                                    />
+                                    {peca}
+                                  </label>
+                                ))}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  ))}
+
+                {selecionados.length > 0 && (
+                  <div style={{ marginTop: 18 }}>
+                    <button
+                      className="rl-btn rl-btn-success"
+                      disabled={loadingAcao}
+                      onClick={adicionarSelecionados}
+                    >
+                      {loadingAcao ? "Adicionando..." : "Adicionar peças selecionadas"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section className="rl-section" id="historico">
+            <div className="rl-card">
+              <div className="rl-card-header">
+                <div className="rl-card-title">Histórico da OS</div>
+                <div className="rl-card-subtitle">
+                  Registro das principais ações executadas.
+                </div>
+              </div>
+
+              <div className="rl-card-body">
+                {logs.length === 0 && (
+                  <div className="rl-empty">Nenhum log encontrado.</div>
+                )}
+
+                {logs.map((log) => (
+                  <div key={log.id} className="rl-history-item">
+                    <div style={{ fontWeight: 800 }}>{log.evento}</div>
+                    <div className="rl-muted" style={{ marginTop: 4, fontSize: 14 }}>
+                      {log.criado_em
+                        ? new Date(log.criado_em).toLocaleString("pt-BR")
+                        : "-"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </main>
       </div>
     </div>
   );
-} 
+}
