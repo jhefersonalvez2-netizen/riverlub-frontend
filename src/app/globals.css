@@ -6,9 +6,9 @@
   --surface-2: #f8fafc;
   --surface-3: #f1f5f9;
 
-  --sidebar: #10233f;
-  --sidebar-2: #16345d;
-  --sidebar-3: #0d1c33;
+  --sidebar: #011549;
+  --sidebar-2: #08246f;
+  --sidebar-3: #000f3b;
   --sidebar-text: #dbe7f5;
   --sidebar-text-soft: #9fb4cf;
 
@@ -367,8 +367,8 @@ img {
 .rl-input:focus,
 .rl-select:focus,
 .rl-textarea:focus {
-  border-color: #7aa2d6;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+  border-color: #5d81d8;
+  box-shadow: 0 0 0 4px rgba(1, 21, 82, 0.08);
 }
 
 /* =========================
