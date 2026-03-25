@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import AppSidebar from "../../components/AppSidebar";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
@@ -233,62 +234,16 @@ export default function FilaPage() {
 
   return (
     <div className="rl-app">
-      <aside className="rl-sidebar">
-        <div className="rl-brand" style={{ alignItems: "flex-start" }}>
-          <img
-            src="/icon-512.png"
-            alt="RiverLub"
-            style={{
-              width: 138,
-              height: "auto",
-              objectFit: "contain",
-            }}
-          />
-          <div className="rl-brand-subtitle">Fila operacional da oficina</div>
-        </div>
-
-        <nav className="rl-nav">
-          <div className="rl-nav-label">Operação</div>
-
-          <Link className="rl-nav-item" href="/">
-            Painel atendente
-          </Link>
-
-          <Link className="rl-nav-item active" href="/fila">
-            Fila de carros
-          </Link>
-
-          <Link className="rl-nav-item" href="/cadastro">
-            Cadastro
-          </Link>
-
-          <a className="rl-nav-item" href="#">
-            Consultar peça
-          </a>
-
-          <a className="rl-nav-item" href="#">
-            Gerenciador de O.S
-          </a>
-
-          <a className="rl-nav-item" href="#">
-            Estoque
-          </a>
-
-          <a className="rl-nav-item" href="#">
-            Configurações
-          </a>
-        </nav>
-
-        <div className="rl-sidebar-footer">
-          <strong>Resumo da fila</strong>
-          <br />
-          Abertas: {abertas.length}
-          <br />
-          Finalizadas: {finalizadas.length}
-          <br />
-          Recentes: {recentes.length}
-        </div>
-      </aside>
+      <AppSidebar
+        active="fila"
+        subtitle="Fila operacional da oficina"
+        footerTitle="Resumo da fila"
+        footerLines={[
+          `Abertas: ${abertas.length}`,
+          `Finalizadas: ${finalizadas.length}`,
+          `Recentes: ${recentes.length}`,
+        ]}
+      />
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="rl-mobile-top">

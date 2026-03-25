@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import AppSidebar from "../../components/AppSidebar";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
@@ -156,62 +157,16 @@ export default function CadastroPage() {
 
   return (
     <div className="rl-app">
-      <aside className="rl-sidebar">
-        <div className="rl-brand" style={{ alignItems: "flex-start" }}>
-          <img
-            src="/icon-512.png"
-            alt="RiverLub"
-            style={{
-              width: 138,
-              height: "auto",
-              objectFit: "contain",
-            }}
-          />
-          <div className="rl-brand-subtitle">Cadastro e abertura de O.S</div>
-        </div>
-
-        <nav className="rl-nav">
-          <div className="rl-nav-label">Operação</div>
-
-          <a className="rl-nav-item" href="/">
-            Painel atendente
-          </a>
-
-          <a className="rl-nav-item" href="/fila">
-            Fila de carros
-          </a>
-
-          <a className="rl-nav-item active" href="/cadastro">
-            Cadastro
-          </a>
-
-          <a className="rl-nav-item" href="#">
-            Consultar peça
-          </a>
-
-          <a className="rl-nav-item" href="#">
-            Gerenciador de O.S
-          </a>
-
-          <a className="rl-nav-item" href="#">
-            Estoque
-          </a>
-
-          <a className="rl-nav-item" href="#">
-            Configurações
-          </a>
-        </nav>
-
-        <div className="rl-sidebar-footer">
-          <strong>Fluxo da tela</strong>
-          <br />
-          Buscar placa
-          <br />
-          Confirmar cliente
-          <br />
-          Criar nova O.S
-        </div>
-      </aside>
+      <AppSidebar
+        active="cadastro"
+        subtitle="Cadastro e abertura de O.S"
+        footerTitle="Fluxo da tela"
+        footerLines={[
+          "Buscar placa",
+          "Confirmar cliente",
+          "Criar nova O.S",
+        ]}
+      />
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="rl-mobile-top">

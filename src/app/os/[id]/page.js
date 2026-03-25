@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import AppSidebar from "../../../components/AppSidebar";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
@@ -554,66 +555,16 @@ export default function OSPage() {
 
   return (
     <div className="rl-app">
-      <aside className="rl-sidebar">
-        <div className="rl-brand" style={{ alignItems: "flex-start" }}>
-          <img
-            src="/icon-512.png"
-            alt="RiverLub"
-            style={{
-              width: 138,
-              height: "auto",
-              objectFit: "contain",
-            }}
-          />
-          <div className="rl-brand-subtitle">Ordem de serviço</div>
-        </div>
-
-        <nav className="rl-nav">
-          <div className="rl-nav-label">Navegação</div>
-
-          <Link className="rl-nav-item" href="/">
-            Painel atendente
-          </Link>
-
-          <Link className="rl-nav-item active" href={`/os/${os.id}`}>
-            O.S #{os.id}
-          </Link>
-
-          <a className="rl-nav-item" href="#resumo">
-            Resumo
-          </a>
-
-          <a className="rl-nav-item" href="#itens">
-            Itens
-          </a>
-
-          <a className="rl-nav-item" href="#catalogo">
-            Catálogo
-          </a>
-
-          <a className="rl-nav-item" href="#orcamentos">
-            Orçamentos
-          </a>
-
-          <a className="rl-nav-item" href="#ia">
-            Diagnóstico IA
-          </a>
-
-          <a className="rl-nav-item" href="#historico">
-            Histórico
-          </a>
-        </nav>
-
-        <div className="rl-sidebar-footer">
-          <strong>Veículo</strong>
-          <br />
-          {os.modelo || "Modelo não informado"}
-          <br />
-          Placa: {os.placa || "-"}
-          <br />
-          Status: {os.status || "-"}
-        </div>
-      </aside>
+      <AppSidebar
+        active="os"
+        subtitle="Ordem de serviço"
+        footerTitle="Veículo"
+        footerLines={[
+          os.modelo || "Modelo não informado",
+          `Placa: ${os.placa || "-"}`,
+          `Status: ${os.status || "-"}`,
+        ]}
+      />
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="rl-mobile-top">
