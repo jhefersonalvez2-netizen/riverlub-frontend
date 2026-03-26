@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import AppSidebar from "../../components/AppSidebar";
 import StatusBadge from "../../components/StatusBadge";
 
@@ -220,9 +221,12 @@ function ColunaFila({ titulo, statusKey, lista, vazio }) {
 }
 
 export default function FilaPage() {
+  const router = useRouter();
+
   const [listaOS, setListaOS] = useState([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState("");
+  const [authChecked, setAuthChecked] = useState(false);
 
   async function carregarFila() {
     try {
@@ -243,8 +247,21 @@ export default function FilaPage() {
   }
 
   useEffect(() => {
-    carregarFila();
-  }, []);
+    const usuarioSalvo = localStorage.getItem("riverlub_usuario");
+
+    if (!usuarioSalvo) {
+      router.replace("/login");
+      return;
+    }
+
+    setAuthChecked(true);
+  }, [router]);
+
+  useEffect(() => {
+    if (authChecked) {
+      carregarFila();
+    }
+  }, [authChecked]);
 
   const abertas = useMemo(
     () => listaOS.filter((os) => os.status === "ABERTA"),
@@ -270,6 +287,16 @@ export default function FilaPage() {
     () => listaOS.filter((os) => os.status === "FINALIZADA"),
     [listaOS]
   );
+
+  if (!authChecked) {
+    return (
+      <div className="rl-auth-shell" style={{ padding: 24 }}>
+        <div className="rl-auth-card">
+          <div className="rl-auth-title">Verificando acesso...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rl-app">
