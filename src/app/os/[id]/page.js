@@ -47,6 +47,7 @@ export default function OSPage() {
   const [orcamentos, setOrcamentos] = useState([]);
   const [logs, setLogs] = useState([]);
   const [arvore, setArvore] = useState(null);
+  const [interacoesCliente, setInteracoesCliente] = useState([]);
 
   const [catalogoExterno, setCatalogoExterno] = useState([]);
   const [loadingCatalogoExterno, setLoadingCatalogoExterno] = useState(false);
@@ -89,6 +90,26 @@ export default function OSPage() {
   async function carregarLogs() {
     const data = await apiFetch(`${API}/os/${id}/logs`);
     if (data.sucesso) setLogs(data.logs || []);
+  }
+
+  async function carregarInteracoesCliente() {
+    try {
+      const todas = [];
+
+      for (const orc of orcamentos) {
+        if (!orc.cliente_token) continue;
+
+        const data = await apiFetch(`${API}/os/publico/orcamento/${orc.cliente_token}`);
+        if (data.sucesso && Array.isArray(data.interacoes)) {
+          todas.push(...data.interacoes);
+        }
+      }
+
+      todas.sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em));
+      setInteracoesCliente(todas);
+    } catch (e) {
+      console.error("Erro ao carregar interações do cliente:", e);
+    }
   }
 
   async function carregarTudo() {
@@ -422,6 +443,14 @@ export default function OSPage() {
     }
   }, [id]);
 
+  useEffect(() => {
+    if (orcamentos.length > 0) {
+      carregarInteracoesCliente();
+    } else {
+      setInteracoesCliente([]);
+    }
+  }, [orcamentos]);
+
   const total = useMemo(() => {
     return itens.reduce((acc, i) => {
       const valor = Number(i.preco_total || 0);
@@ -431,6 +460,81 @@ export default function OSPage() {
 
   const totalItens = useMemo(() => itens.length, [itens]);
   const totalOrcamentos = useMemo(() => orcamentos.length, [orcamentos]);
+
+  const ultimaInteracaoCliente = useMemo(() => {
+    if (!interacoesCliente.length) return null;
+    return interacoesCliente[0];
+  }, [interacoesCliente]);
+
+  const acoesFluxo = useMemo(() => {
+    if (!os) return [];
+
+    switch (os.status) {
+      case "ABERTA":
+        return [
+          {
+            label: "Enviar para fila de espera",
+            className: "rl-btn rl-btn-dark",
+            action: () => alterarStatusOS("FILA_DE_ESPERA", "Status alterado para FILA_DE_ESPERA"),
+          },
+          {
+            label: "Aguardar aprovação",
+            className: "rl-btn rl-btn-warning",
+            action: () =>
+              alterarStatusOS(
+                "AGUARDANDO_APROVACAO",
+                "Status alterado para AGUARDANDO_APROVACAO"
+              ),
+          },
+        ];
+
+      case "AGUARDANDO_APROVACAO":
+        return [
+          {
+            label: "Marcar como aberta",
+            className: "rl-btn rl-btn-dark",
+            action: () => alterarStatusOS("ABERTA", "Status alterado para ABERTA"),
+          },
+        ];
+
+      case "FILA_DE_ESPERA":
+        return [
+          {
+            label: "Iniciar execução",
+            className: "rl-btn rl-btn-primary",
+            action: () =>
+              alterarStatusOS("EM_EXECUCAO", "Status alterado para EM_EXECUCAO"),
+          },
+        ];
+
+      case "EM_EXECUCAO":
+        return [
+          {
+            label: "Voltar para fila de espera",
+            className: "rl-btn rl-btn-secondary",
+            action: () =>
+              alterarStatusOS("FILA_DE_ESPERA", "Status alterado para FILA_DE_ESPERA"),
+          },
+          {
+            label: "Finalizar O.S",
+            className: "rl-btn rl-btn-success",
+            action: finalizarOS,
+          },
+        ];
+
+      case "FINALIZADA":
+        return [
+          {
+            label: "Reabrir O.S",
+            className: "rl-btn rl-btn-secondary",
+            action: reabrirOS,
+          },
+        ];
+
+      default:
+        return [];
+    }
+  }, [os]);
 
   if (loadingPagina) {
     return (
@@ -560,68 +664,59 @@ export default function OSPage() {
             </div>
           </div>
 
+          {ultimaInteracaoCliente && (
+            <section className="rl-section">
+              <div className="rl-card">
+                <div className="rl-card-header">
+                  <div className="rl-card-title">Última resposta do cliente</div>
+                  <div className="rl-card-subtitle">
+                    Acompanhe rapidamente a última ação registrada no canal do cliente.
+                  </div>
+                </div>
+
+                <div className="rl-card-body">
+                  <div className="rl-inline" style={{ marginBottom: 14 }}>
+                    <StatusBadge status={ultimaInteracaoCliente.tipo} />
+                  </div>
+
+                  {ultimaInteracaoCliente.mensagem && (
+                    <div className="rl-alert rl-alert-warning" style={{ marginBottom: 12 }}>
+                      {ultimaInteracaoCliente.mensagem}
+                    </div>
+                  )}
+
+                  <div className="rl-os-meta">
+                    Registrado em:{" "}
+                    {ultimaInteracaoCliente.criado_em
+                      ? new Date(ultimaInteracaoCliente.criado_em).toLocaleString("pt-BR")
+                      : "-"}
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
           <section className="rl-section">
             <div className="rl-card">
               <div className="rl-card-header">
                 <div className="rl-card-title">Fluxo operacional</div>
                 <div className="rl-card-subtitle">
-                  Atualize rapidamente a etapa atual da ordem de serviço.
+                  A próxima ação da oficina varia conforme o estágio atual da ordem de serviço.
                 </div>
               </div>
 
               <div className="rl-card-body">
                 <div className="rl-inline">
-                  <button
-                    className="rl-btn rl-btn-dark"
-                    disabled={loadingAcao || os.status === "ABERTA"}
-                    onClick={() => alterarStatusOS("ABERTA", "Status alterado para ABERTA")}
-                  >
-                    Marcar como aberta
-                  </button>
-
-                  <button
-                    className="rl-btn rl-btn-primary"
-                    disabled={loadingAcao || os.status === "EM_EXECUCAO"}
-                    onClick={() =>
-                      alterarStatusOS("EM_EXECUCAO", "Status alterado para EM_EXECUCAO")
-                    }
-                  >
-                    Em execução
-                  </button>
-
-                  <button
-                    className="rl-btn rl-btn-warning"
-                    disabled={loadingAcao || os.status === "AGUARDANDO_APROVACAO"}
-                    onClick={() =>
-                      alterarStatusOS(
-                        "AGUARDANDO_APROVACAO",
-                        "Status alterado para AGUARDANDO_APROVACAO"
-                      )
-                    }
-                  >
-                    Aguardando aprovação
-                  </button>
-
-                  <button
-                    className="rl-btn rl-btn-secondary"
-                    disabled={loadingAcao || os.status === "AGUARDANDO_PECA"}
-                    onClick={() =>
-                      alterarStatusOS(
-                        "AGUARDANDO_PECA",
-                        "Status alterado para AGUARDANDO_PECA"
-                      )
-                    }
-                  >
-                    Aguardando peça
-                  </button>
-
-                  <button
-                    className="rl-btn rl-btn-success"
-                    disabled={loadingAcao || os.status === "FINALIZADA"}
-                    onClick={finalizarOS}
-                  >
-                    Finalizar OS
-                  </button>
+                  {acoesFluxo.map((acao) => (
+                    <button
+                      key={acao.label}
+                      className={acao.className}
+                      disabled={loadingAcao}
+                      onClick={acao.action}
+                    >
+                      {acao.label}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
@@ -1157,4 +1252,4 @@ export default function OSPage() {
       </div>
     </div>
   );
-}
+} 

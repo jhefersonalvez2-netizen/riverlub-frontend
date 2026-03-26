@@ -39,7 +39,7 @@ function getColumnBadgeClass(status) {
   if (status === "ABERTA") return "rl-badge rl-badge-open";
   if (status === "EM_EXECUCAO") return "rl-badge rl-badge-info";
   if (status === "AGUARDANDO_APROVACAO") return "rl-badge rl-badge-danger";
-  if (status === "AGUARDANDO_PECA") return "rl-badge rl-badge-default";
+  if (status === "FILA_DE_ESPERA") return "rl-badge rl-badge-default";
   if (status === "FINALIZADA") return "rl-badge rl-badge-final";
   return "rl-badge rl-badge-default";
 }
@@ -48,7 +48,7 @@ function getColumnAccent(status) {
   if (status === "ABERTA") return "#f59e0b";
   if (status === "EM_EXECUCAO") return "#2563eb";
   if (status === "AGUARDANDO_APROVACAO") return "#d72638";
-  if (status === "AGUARDANDO_PECA") return "#64748b";
+  if (status === "FILA_DE_ESPERA") return "#64748b";
   if (status === "FINALIZADA") return "#198754";
   return "#64748b";
 }
@@ -261,8 +261,8 @@ export default function FilaPage() {
     [listaOS]
   );
 
-  const aguardandoPeca = useMemo(
-    () => listaOS.filter((os) => os.status === "AGUARDANDO_PECA"),
+  const filaDeEspera = useMemo(
+    () => listaOS.filter((os) => os.status === "FILA_DE_ESPERA"),
     [listaOS]
   );
 
@@ -281,7 +281,7 @@ export default function FilaPage() {
           `Abertas: ${abertas.length}`,
           `Em execução: ${emExecucao.length}`,
           `Aguardando aprovação: ${aguardandoAprovacao.length}`,
-          `Aguardando peça: ${aguardandoPeca.length}`,
+          `Fila de espera: ${filaDeEspera.length}`,
           `Finalizadas: ${finalizadas.length}`,
         ]}
       />
@@ -348,9 +348,9 @@ export default function FilaPage() {
             </div>
 
             <div className="rl-card rl-kpi">
-              <div className="rl-kpi-label">Aguardando peça</div>
-              <div className="rl-kpi-value">{aguardandoPeca.length}</div>
-              <div className="rl-kpi-foot">Paradas por falta de item</div>
+              <div className="rl-kpi-label">Fila de espera</div>
+              <div className="rl-kpi-value">{filaDeEspera.length}</div>
+              <div className="rl-kpi-foot">Aprovadas, aguardando vaga</div>
             </div>
           </section>
 
@@ -383,10 +383,10 @@ export default function FilaPage() {
                 />
 
                 <ColunaFila
-                  titulo="Aguardando peça"
-                  statusKey="AGUARDANDO_PECA"
-                  lista={aguardandoPeca}
-                  vazio="Nenhuma OS aguardando peça."
+                  titulo="Fila de espera"
+                  statusKey="FILA_DE_ESPERA"
+                  lista={filaDeEspera}
+                  vazio="Nenhuma OS na fila de espera."
                 />
               </section>
 
