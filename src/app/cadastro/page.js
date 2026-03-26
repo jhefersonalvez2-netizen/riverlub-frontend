@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppSidebar from "../../components/AppSidebar";
 
@@ -49,6 +49,7 @@ export default function CadastroPage() {
   const [loadingBusca, setLoadingBusca] = useState(false);
   const [erro, setErro] = useState("");
   const [mensagemBusca, setMensagemBusca] = useState("");
+  const [authChecked, setAuthChecked] = useState(false);
 
   function limparFormularioMantendoPlaca() {
     setCliente("");
@@ -153,6 +154,27 @@ export default function CadastroPage() {
     }
 
     setLoading(false);
+  }
+
+  useEffect(() => {
+    const usuarioSalvo = localStorage.getItem("riverlub_usuario");
+
+    if (!usuarioSalvo) {
+      router.replace("/login");
+      return;
+    }
+
+    setAuthChecked(true);
+  }, [router]);
+
+  if (!authChecked) {
+    return (
+      <div className="rl-auth-shell" style={{ padding: 24 }}>
+        <div className="rl-auth-card">
+          <div className="rl-auth-title">Verificando acesso...</div>
+        </div>
+      </div>
+    );
   }
 
   return (
