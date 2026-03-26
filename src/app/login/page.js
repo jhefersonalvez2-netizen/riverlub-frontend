@@ -1,32 +1,78 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+const API = process.env.NEXT_PUBLIC_API_URL;
+
+async function apiFetch(url, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+  const isJson = contentType.includes("application/json");
+
+  if (!isJson) {
+    const text = await response.text();
+    throw new Error(text || "Resposta inválida da API");
+  }
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.erro || "Erro na requisição");
+  }
+
+  return data;
+}
+
 export default function LoginPage() {
-  const [usuario, setUsuario] = useState("");
+  const router = useRouter();
+
+  const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function entrar(e) {
     e.preventDefault();
 
-    if (!usuario.trim() || !senha.trim()) {
-      alert("Preencha usuário e senha.");
+    if (!email.trim() || !senha.trim()) {
+      alert("Preencha e-mail e senha.");
       return;
     }
 
     setLoading(true);
 
     try {
-      setTimeout(() => {
-        alert("Login visual pronto. Próximo passo: conectar autenticação real.");
+      const data = await apiFetch(`${API}/auth/login`, {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          senha,
+        }),
+      });
+
+      if (!data.sucesso || !data.usuario) {
+        alert("Não foi possível realizar login.");
         setLoading(false);
-      }, 700);
+        return;
+      }
+
+      localStorage.setItem("riverlub_usuario", JSON.stringify(data.usuario));
+      alert(`Bem-vindo, ${data.usuario.nome}`);
+      router.push("/");
+      return;
     } catch (error) {
       console.error(error);
-      alert("Erro ao entrar.");
-      setLoading(false);
+      alert(error.message || "Erro ao entrar.");
     }
+
+    setLoading(false);
   }
 
   return (
@@ -193,7 +239,7 @@ export default function LoginPage() {
                   lineHeight: 1.6,
                 }}
               >
-                Use seu usuário e senha para acessar o painel da oficina.
+                Use seu e-mail e senha para acessar o painel da oficina.
               </p>
             </div>
 
@@ -203,14 +249,14 @@ export default function LoginPage() {
               style={{ gridTemplateColumns: "1fr" }}
             >
               <div className="rl-field">
-                <label className="rl-label">Usuário</label>
+                <label className="rl-label">E-mail</label>
                 <input
                   className="rl-input"
-                  type="text"
-                  placeholder="Digite seu usuário"
-                  value={usuario}
+                  type="email"
+                  placeholder="Digite seu e-mail"
+                  value={email}
                   autoComplete="username"
-                  onChange={(e) => setUsuario(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
 
