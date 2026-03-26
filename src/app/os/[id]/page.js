@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import AppSidebar from "../../../components/AppSidebar";
 import StatusBadge from "../../../components/StatusBadge";
 
@@ -40,6 +40,7 @@ async function apiFetch(url, options = {}) {
 
 export default function OSPage() {
   const { id } = useParams();
+  const router = useRouter();
 
   const [os, setOS] = useState(null);
   const [itens, setItens] = useState([]);
@@ -66,6 +67,7 @@ export default function OSPage() {
   const [loadingPagina, setLoadingPagina] = useState(true);
   const [loadingAcao, setLoadingAcao] = useState(false);
   const [erro, setErro] = useState("");
+  const [authChecked, setAuthChecked] = useState(false);
 
   async function carregarOS() {
     const data = await apiFetch(`${API}/os/${id}`);
@@ -438,10 +440,21 @@ export default function OSPage() {
   }
 
   useEffect(() => {
-    if (id) {
+    const usuarioSalvo = localStorage.getItem("riverlub_usuario");
+
+    if (!usuarioSalvo) {
+      router.replace("/login");
+      return;
+    }
+
+    setAuthChecked(true);
+  }, [router]);
+
+  useEffect(() => {
+    if (authChecked && id) {
       carregarTudo();
     }
-  }, [id]);
+  }, [authChecked, id]);
 
   useEffect(() => {
     if (orcamentos.length > 0) {
@@ -535,6 +548,16 @@ export default function OSPage() {
         return [];
     }
   }, [os]);
+
+  if (!authChecked) {
+    return (
+      <div className="rl-auth-shell" style={{ padding: 24 }}>
+        <div className="rl-auth-card">
+          <div className="rl-auth-title">Verificando acesso...</div>
+        </div>
+      </div>
+    );
+  }
 
   if (loadingPagina) {
     return (
@@ -1252,4 +1275,4 @@ export default function OSPage() {
       </div>
     </div>
   );
-} 
+}
