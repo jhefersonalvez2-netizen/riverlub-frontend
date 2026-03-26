@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import AppSidebar from "../components/AppSidebar";
 import StatusBadge from "../components/StatusBadge";
 
@@ -36,8 +37,11 @@ async function apiFetch(url, options = {}) {
 }
 
 export default function Home() {
+  const router = useRouter();
+
   const [listaOS, setListaOS] = useState([]);
   const [erro, setErro] = useState("");
+  const [authChecked, setAuthChecked] = useState(false);
 
   async function carregarOS() {
     try {
@@ -54,8 +58,21 @@ export default function Home() {
   }
 
   useEffect(() => {
-    carregarOS();
-  }, []);
+    const usuarioSalvo = localStorage.getItem("riverlub_usuario");
+
+    if (!usuarioSalvo) {
+      router.replace("/login");
+      return;
+    }
+
+    setAuthChecked(true);
+  }, [router]);
+
+  useEffect(() => {
+    if (authChecked) {
+      carregarOS();
+    }
+  }, [authChecked]);
 
   const totalOS = listaOS.length;
 
@@ -70,6 +87,16 @@ export default function Home() {
   );
 
   const recentes = useMemo(() => listaOS.slice(0, 8), [listaOS]);
+
+  if (!authChecked) {
+    return (
+      <div className="rl-auth-shell" style={{ padding: 24 }}>
+        <div className="rl-auth-card">
+          <div className="rl-auth-title">Verificando acesso...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rl-app">
